@@ -7,13 +7,16 @@ namespace Flexpressions {
 
 		static void Main(string[] args) {
 
-			Console.WriteLine("hi");
-			Console.WriteLine("hi");
+			MonoEx<float> one = new MonoEx<float>(1);
+			MonoEx<int> negtwo = new MonoEx<int>(-2);
+			MonoEx<int> quad = new MonoEx<int>('x', 2);
+			MonoEx<double> flippy = new MonoEx<double>(7, 't', -2);
 
-			string? plop = Console.ReadLine();
-
-			if (plop != null)
-				Console.WriteLine(plop);
+			Console.WriteLine(one);
+			Console.WriteLine(negtwo);
+			Console.WriteLine(quad);
+			Console.WriteLine(flippy);
+			//Console.WriteLine("\u207B");
 
 		}
 
