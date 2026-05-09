@@ -1,50 +1,76 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Numerics;
-using System.Text;
 
-namespace Flexpressions {
-	public struct MonoEx<T> where T : INumber<T> {
+namespace Flexpressions
+{
 
-		static private readonly char DEFAULT_IV = 'x';
-		static private readonly T DEFAULT_CO = T.One;
-		static private readonly Dictionary<T, string> EXPONENT_FOR = new Dictionary<T, string>() {
+	public class PolyEx<NumType> where NumType : INumber<NumType>
+	{
 
-			{T.Zero, "\u2070"},
-			{T.One, "\u00B9"},
-			{T.CreateChecked(2), "\u00B2"},
-			{T.CreateChecked(3), "\u00B3"},
-			{T.CreateChecked(4), "\u2074"},
-			{T.CreateChecked(5), "\u2075"},
-			{T.CreateChecked(6), "\u2076"},
-			{T.CreateChecked(7), "\u2077"},
-			{T.CreateChecked(8), "\u2078"},
-			{T.CreateChecked(9), "\u2079"}
+		private List<MonomialNode<NumType>> termSeries;
 
-		};
+		private PolyEx(List<MonomialNode<NumType>> termSeries) => this.termSeries = termSeries;
 
-		char independent;
-		T coefficient;
-		T degree; 
+		private PolyEx(MonomialNode<NumType> term)
+		{
 
-		public MonoEx(T degree){
+			List<MonomialNode<NumType>> termSeries = new List<MonomialNode<NumType>>();
 
-			coefficient = DEFAULT_CO;
-			independent = DEFAULT_IV;
-			this.degree = degree;
+			termSeries.Add(term);
+
+			this.termSeries = termSeries;
 
 		}
 
-		public string Expression => "" + independent + coefficient + degree
+		// perfors mono1 (+/-) mono2 and returns the resulting polynomial expression
+		// ex: mono1 - mono2
+		// ex: mono1 + mono2
+		public static PolyEx<NumType> CombineMonomials(MonoEx<NumType> mono1, MonoEx<NumType> mono2, bool subtract)
+		{
 
+			List<MonomialNode<NumType>> termSeries = new List<MonomialNode<NumType>>();
 
+			if (mono1.IsLike(mono2))
+			{
 
-	}
+				// add first to second or s
+				NumType coefficientSum = mono1.Coefficient + (mono2.Coefficient * (subtract ? NumType.CreateChecked(-1) : NumType.One));
+				termSeries.Add(new MonomialNode<NumType>(null, new MonoEx<NumType>(mono1, coefficientSum)));
+				//return new PolyEx<NumType>(termList());
 
-	class PolyEx<T> where T : INumber<T>{
+			}
+			else
+			{
 
-		
+				var first = (mono1.GreaterOrder(mono2) ? mono1 : mono2);
+				var second = (first.Equals(mono1) ? mono2 : mono1);
+
+				char op = (subtract ? '-' : '+');
+
+				termSeries.Add(new MonomialNode<NumType>(null, first));
+				termSeries.Add(new MonomialNode<NumType>(op, second));
+
+			}
+
+			return new PolyEx<NumType>(termSeries);
+
+		}
+
+		public override string ToString()
+		{
+
+			string ret = "";
+
+			foreach (var MonoNode in termSeries)
+				ret += MonoNode;
+
+			return ret;
+
+		}
 
 	}
 
 }
+
+
