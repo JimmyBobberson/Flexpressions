@@ -2,75 +2,100 @@
 using System.Diagnostics;
 using System.Numerics;
 
-namespace Flexpressions
-{
+namespace Flexpressions;
 
-	public class PolyEx<NumType> where NumType : INumber<NumType>
-	{
+public record struct MonomialNode<NumType>(char? symbol, MonoEx<NumType> mono) where NumType : INumber<NumType> {
 
-		private List<MonomialNode<NumType>> termSeries;
+	override public string ToString() => ( ( symbol != null ) ? symbol + " " : "" )
+											+ mono + " ";
+}
 
-		private PolyEx(List<MonomialNode<NumType>> termSeries) => this.termSeries = termSeries;
+public class PolyEx<NumType> where NumType : INumber<NumType> {
 
-		private PolyEx(MonomialNode<NumType> term)
-		{
+	private static readonly char MINUS = '-';
+	private static readonly char PLUS = '+';
 
-			List<MonomialNode<NumType>> termSeries = new List<MonomialNode<NumType>>();
+	private List<MonomialNode<NumType>> termSeries;
 
-			termSeries.Add(term);
+	private PolyEx(List<MonomialNode<NumType>> termSeries) => this.termSeries = termSeries;
 
-			this.termSeries = termSeries;
+	private PolyEx(MonomialNode<NumType> term) {
+
+		List<MonomialNode<NumType>> termSeries = new List<MonomialNode<NumType>>();
+
+		termSeries.Add(term);
+
+		this.termSeries = termSeries;
+
+	}
+
+	// performs mono1 (+/-) mono2 and returns the resulting polynomial expression
+	public static PolyEx<NumType> CombineMonomials(MonoEx<NumType> mono1, MonoEx<NumType> mono2, bool subtract) {
+
+		List<MonomialNode<NumType>> termSeries = new List<MonomialNode<NumType>>();
+
+		// if the monomials are like terms, just sum their coefficients
+		// resulting polynomial will only have 1 term, but its best if we always return a polynomial when we do +/- 
+		if (mono1.IsLike(mono2)) {
+
+			// add first to second
+			NumType coefficientSum = mono1.Coefficient + ( mono2.Coefficient * ( subtract ? NumType.CreateChecked(-1) : NumType.One ) );
+
+			termSeries.Add(new MonomialNode<NumType>(null, new MonoEx<NumType>(mono1, coefficientSum)));
 
 		}
+		else {
 
-		// perfors mono1 (+/-) mono2 and returns the resulting polynomial expression
-		// ex: mono1 - mono2
-		// ex: mono1 + mono2
-		public static PolyEx<NumType> CombineMonomials(MonoEx<NumType> mono1, MonoEx<NumType> mono2, bool subtract)
-		{
+			// figure out which one comes first in the order
+			var first = ( mono1.GreaterOrder(mono2) ? mono1 : mono2 );
+			var second = ( first.Equals(mono1) ? mono2 : mono1 );
 
-			List<MonomialNode<NumType>> termSeries = new List<MonomialNode<NumType>>();
+			// determine the operator char
+			char op = ( subtract ? MINUS : PLUS );
 
-			if (mono1.IsLike(mono2))
-			{
+			// subtracting a negative is addition,  simplify expression
+			if (op == MINUS && second.Coefficient < NumType.Zero) {
 
-				// add first to second or s
-				NumType coefficientSum = mono1.Coefficient + (mono2.Coefficient * (subtract ? NumType.CreateChecked(-1) : NumType.One));
-				termSeries.Add(new MonomialNode<NumType>(null, new MonoEx<NumType>(mono1, coefficientSum)));
-				//return new PolyEx<NumType>(termList());
+				// remove the negative sign from the term
+				second = new MonoEx<NumType>(second, second.Coefficient * NumType.CreateChecked(-1));
+				// swap the operator
+				op = PLUS;
 
 			}
-			else
-			{
 
-				var first = (mono1.GreaterOrder(mono2) ? mono1 : mono2);
-				var second = (first.Equals(mono1) ? mono2 : mono1);
+			// adding a negative is subtraction
+			else if (op == PLUS && second.Coefficient < NumType.Zero) {
 
-				char op = (subtract ? '-' : '+');
-
-				termSeries.Add(new MonomialNode<NumType>(null, first));
-				termSeries.Add(new MonomialNode<NumType>(op, second));
+				// remove the negative sign from the term
+				second = new MonoEx<NumType>(second, second.Coefficient * NumType.CreateChecked(-1));
+				// swap the operator
+				op = MINUS;
 
 			}
 
-			return new PolyEx<NumType>(termSeries);
+			// add to mono list in order
+			termSeries.Add(new MonomialNode<NumType>(null, first));
+			termSeries.Add(new MonomialNode<NumType>(op, second));
 
 		}
 
-		public override string ToString()
-		{
+		return new PolyEx<NumType>(termSeries);
 
-			string ret = "";
+	}
 
-			foreach (var MonoNode in termSeries)
-				ret += MonoNode;
+	public override string ToString() {
 
-			return ret;
+		string ret = "";
 
-		}
+		foreach (var MonoNode in termSeries)
+			ret += MonoNode;
+
+		return ret;
 
 	}
 
 }
+
+
 
 
