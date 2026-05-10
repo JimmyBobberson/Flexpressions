@@ -6,19 +6,25 @@ using System.Text;
 using System.Linq;
 using System.Net;
 using System.Diagnostics.CodeAnalysis;
+using System.Collections.Immutable;
 
 namespace Flexpressions;
 
 /// <summary>
-/// This is a class!!!
+/// <b>A MonoEx (monomial expression) is the product of a coefficient and a set of independent variables (each with a degree).</b> <para/>
+/// MonoEx objects are the fundamental building blocks of Flexpressions.<br/>
+/// A MonoEx can use any type that implements INumber (int, float, double, etc). <br/>
+/// MonoEx objects are immutable and all operations return a new object.<br/>
 /// </summary>
-public class MonoEx<NumType> where NumType : INumber<NumType> {
+public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<NumType> {
 
-	#region Static Config and Helper Variables
+	// return T.CreateChecked(IFloatingPoint<T>.Round(fp, decimals, MidpointRounding.AwayFromZero));
+
+	#region Static Config and Helper Stuff
 
 	// exponent config
-	static private readonly bool EXPONENTS_ARE_SUPERSCRIPTS = false; // DO NOT SET TO TRUE, it does not function currently (see DegreeToString)
-																	 // maps digits to their superscript unicode character 
+	static private readonly bool INT_EXPONENTS_ARE_SUPERSCRIPTS = false; // curently broken
+
 	static private readonly Dictionary<NumType, string> SUPERSCRIPT_FOR_DIGIT = new Dictionary<NumType, string>() {
 
 			{NumType.Zero, "\u2070"},
@@ -33,7 +39,12 @@ public class MonoEx<NumType> where NumType : INumber<NumType> {
 			{NumType.CreateChecked(9), "\u2079"}
 
 		};
-	static private readonly string SUPERSCRIPT_FOR_NEGATIVE = "\u207B";
+	private const string SUPERSCRIPT_FOR_NEGATIVE = "\u207B";
+
+	// not implemented!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	static private readonly HashSet<char> DISALLOWED_VARS = new HashSet<Char>()
+		{ '(', ')', '[', ']', '{', '}', '^', '+', '-', '*', '/',
+		'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
 
 	// convert a degree number to its string representation 
 	static private string DegreeToString(NumType degree) {
@@ -42,38 +53,63 @@ public class MonoEx<NumType> where NumType : INumber<NumType> {
 			return "";
 
 		// non-superscript representation of exponent
-		if (!EXPONENTS_ARE_SUPERSCRIPTS)
+		if (degree is not int || !INT_EXPONENTS_ARE_SUPERSCRIPTS) {
+
+			if (degree == NumType.One)
+				return "";
+
 			return "^" + degree;
+
+		}
+
 
 		// convert exponent to superscript string
 
 		string ret = ( degree < NumType.Zero ) ? SUPERSCRIPT_FOR_NEGATIVE : "";
 		degree = NumType.Abs(degree);
 
-		// TODO: support multidigit powers (currently only supports single digit powers
+		// TODO: support multidigit powers for non int types
 
-		/*Queue<T> digits = new Queue<T>();
+		Queue<NumType> digits = new Queue<NumType>();
 
-		while(degree > T.Zero){
+		while (degree > NumType.Zero) {
 
-			T digit = degree % T.CreateChecked(10);
+			NumType digit = degree % NumType.CreateChecked(10);
 
 			digits.Enqueue(digit);
 
-			degree /= T.CreateChecked(10);
+			degree /= NumType.CreateChecked(10);
 
 		}
 
 		while (digits.Count != 0)
-			ret += SUPERSCRIPT_FOR_DIGIT[digits.Dequeue()]; */
+			ret += SUPERSCRIPT_FOR_DIGIT[digits.Dequeue()];
 
 		return ret;
 
 	}
 
+	// not total decimals to display but maxs
+	private const int DECIMAL_PRECISION = 3;
+
+	// i despise how this is written
+	// i was trying to cast INumber down to I
+	public static NumType ForcePrecision(NumType value) {
+		return value switch {
+
+			double d => (NumType)(object)Math.Round(d, DECIMAL_PRECISION, MidpointRounding.AwayFromZero),
+			float f => (NumType)(object)MathF.Round(f, DECIMAL_PRECISION, MidpointRounding.AwayFromZero),
+			decimal dec => (NumType)(object)Math.Round(dec, DECIMAL_PRECISION, MidpointRounding.AwayFromZero),
+			Half h => (NumType)(object)Half.Round(h, DECIMAL_PRECISION, MidpointRounding.AwayFromZero),
+
+			// Non-floating point types - return unchanged
+			_ => value
+		};
+	}
+
 	#endregion
 
-	#region State
+	#region State and Constructors
 
 	// maps independent variables to their degree
 	// todo: is this an imperfect choice of data structure? i dont need to modify it much after construction
@@ -86,19 +122,16 @@ public class MonoEx<NumType> where NumType : INumber<NumType> {
 
 	}
 
-	private IdpList independents;
+	private readonly IdpList independents;
 
 	// coefficient of monomial
-	private NumType coefficient;
-
-	#endregion
-
-	#region Constructors
+	private readonly NumType coefficient;
 
 	// construct a monomial expression with the given coefficient and idp map
+	// trying to ensure that precision is forced on IdpList in its lifetime without having to iterate through it here
 	private MonoEx(NumType coefficient, IdpList independents) {
 
-		this.coefficient = coefficient;
+		this.coefficient = ForcePrecision(coefficient);
 		this.independents = new IdpList(independents);
 
 	}
@@ -107,19 +140,19 @@ public class MonoEx<NumType> where NumType : INumber<NumType> {
 	/// construct a monomial expression with the given coefficient, independent variable, and degree 
 	/// </summary>
 	public MonoEx(NumType coefficient, char independent, NumType degree) :
-		this(coefficient, new IdpList() { { independent, degree } }) { }
+		this(coefficient, new IdpList() { { independent, ForcePrecision(degree) } }) { }
 
 	/// <summary>
-	// construct a constant monomial expression (no independent variables)
+	/// construct a constant monomial expression (no independent variables)
 	/// </summary>
 	public MonoEx(NumType coefficient) :
 		this(coefficient, new IdpList()) { }
 
 	/// <summary>
-	// construct a constant monomial expression where the coefficient is one 
+	/// construct a constant monomial expression where the coefficient is one 
 	/// </summary>
 	public MonoEx(char independent, NumType degree) :
-		this(NumType.One, new IdpList() { { independent, degree } }) { }
+		this(NumType.One, new IdpList() { { independent, ForcePrecision(degree) } }) { }
 
 	public MonoEx(MonoEx<NumType> other) :
 		this(other.coefficient, new IdpList(other.independents)) { }
@@ -127,19 +160,11 @@ public class MonoEx<NumType> where NumType : INumber<NumType> {
 	public MonoEx(MonoEx<NumType> other, NumType newCoefficient) :
 		this(newCoefficient, new IdpList(other.independents)) { }
 
-	// returns true if vars are the same (deep check on dict)
-	public bool IsLike(MonoEx<NumType> other) {
-
-		if (other.IndependentVariables.Count != this.IndependentVariables.Count)
-			return false;
-
-		foreach (var (independent, degree) in this.independents)
-			if (!other.independents.TryGetValue(independent, out var otherDegree) || degree != otherDegree)
-				return false;
-
-		return true;
-
-	}
+	/// <summary>
+	/// Returns a monomial with the same coefficient and variables but opposite sign
+	/// </summary>
+	/// <returns></returns>
+	public MonoEx<NumType> Flipped() => new MonoEx<NumType>(this, this.coefficient * NumType.CreateChecked(-1));
 
 	#endregion
 
@@ -148,38 +173,42 @@ public class MonoEx<NumType> where NumType : INumber<NumType> {
 	///<summary>
 	/// returns the degree of a given independent variable in the monomial (zero if the variable is not explicitly present)
 	///</summary>
-	public NumType DegreeOfVariable(char idpVar) => independents.TryGetValue(idpVar, out var degree) ? degree : NumType.Zero;
+	public NumType DegreeOfVariable(char idpVar) => independents.TryGetValue(idpVar, out var degree) ? ForcePrecision(degree) : NumType.Zero;
 
 	///<summary>
 	/// returns a readonly set of all the independent variables the monomial contains
 	///</summary>
 	public IReadOnlyCollection<char> IndependentVariables => independents.Keys;
 
+	/// <summary>
+	/// returns the count of all independent variables in the monomial
+	/// </summary>
+	public int IndependentVariableCount => independents.Count;
+
 	///<summary>
 	/// returns the coefficient of the expression
 	///</summary>
-	public NumType Coefficient => this.coefficient;
+	public NumType Coefficient => ForcePrecision(this.coefficient);
 
 	///<summary>
 	/// returns the sum of all degrees of the independent variables in the monomial expression, which is the total degree of the monomial
 	///</summary>
-	public NumType Degree => independents.Values.Aggregate(NumType.Zero, (current, next) => current + next);
+	public NumType Degree => ForcePrecision(independents.Values.Aggregate(NumType.Zero, (current, next) => current + next));
 
 	///<summary>
 	/// returns the monomial in its written out form
 	///</summary>
 	public string Expression => ToString();
 
+	/// <summary>
+	/// Returns the sum of the int values of each independent variable as a tiebreaker for CompareTo
+	/// </summary>
+	/// <returns></returns>
+	private int VariableLexicalScore() => independents.Keys.Sum(idpVar => (int)idpVar);
+
 	#endregion
 
 	#region Operators ( + Public Interface for Construction)
-
-	// order for polynomials:
-	// by degree, higher degree first
-	public static bool GreaterOrder(MonoEx<NumType> mono1, MonoEx<NumType> mono2) => mono1.Degree > mono2.Degree;
-
-	// nonstatic delegate for GreaterOrder
-	public bool GreaterOrder(MonoEx<NumType> other) => MonoEx<NumType>.GreaterOrder(this, other);
 
 	// add monomials to make a polynomial
 	public static PolyEx<NumType> operator +(MonoEx<NumType> mono1, MonoEx<NumType> mono2) => PolyEx<NumType>.CombineMonomials(mono1, mono2, false);
@@ -190,38 +219,43 @@ public class MonoEx<NumType> where NumType : INumber<NumType> {
 	// multiply monomials to get a monomial in return 
 	public static MonoEx<NumType> operator *(MonoEx<NumType> mono1, MonoEx<NumType> mono2) {
 
-		NumType coefficientProduct = mono1.coefficient * mono2.coefficient;
+		NumType coefficientProduct = ForcePrecision(mono1.coefficient * mono2.coefficient);
 		IdpList combinedVars = new IdpList();
 
-		// get each variable in mono1
-		foreach (char idpVar in mono1.IndependentVariables) {
+		// if either monomial is zero, skip all this var work and turn the monomial into "canonical zero"
+		if (coefficientProduct != NumType.Zero) {
 
-			// save the degree
-			NumType degree = mono1.DegreeOfVariable(idpVar);
+			// get each variable in mono1
+			foreach (char idpVar in mono1.IndependentVariables) {
 
-			// check if mono2 has the variable, read its degree
-			if (mono2.independents.TryGetValue(idpVar, out var otherDegree))
-				//if mono2 has the variable, combine the degrees
-				degree += otherDegree;
+				// save the degree
+				NumType degree = mono1.DegreeOfVariable(idpVar);
 
-			// add the new degree variable to the new dictionary
-			combinedVars.Add(idpVar, degree);
+				// check if mono2 has the variable, read its degree
+				if (mono2.independents.TryGetValue(idpVar, out var otherDegree))
+					//if mono2 has the variable, combine the degrees
+					degree += otherDegree;
 
-		}
+				// add the new degree variable to the new dictionary
+				combinedVars.Add(idpVar, ForcePrecision(degree));
 
-		//repeat the exact process for vars in mono2 but not in mono1
+			}
 
-		// get each variable in mono2
-		foreach (char idpVar in mono2.IndependentVariables) {
+			//repeat the exact process for vars in mono2 but not in mono1
 
-			// skip if already added from mono1 pass
-			if (combinedVars.ContainsKey(idpVar))
-				continue;
+			// get each variable in mono2
+			foreach (char idpVar in mono2.IndependentVariables) {
 
-			// var found that is in mono2 but not mono1
+				// skip if already added from mono1 pass
+				if (combinedVars.ContainsKey(idpVar))
+					continue;
 
-			// add the variable to the new dictionary
-			combinedVars.Add(idpVar, mono2.DegreeOfVariable(idpVar));
+				// var found that is in mono2 but not mono1
+
+				// add the variable to the new dictionary
+				combinedVars.Add(idpVar, ForcePrecision(mono2.DegreeOfVariable(idpVar)));
+
+			}
 
 		}
 
@@ -230,13 +264,88 @@ public class MonoEx<NumType> where NumType : INumber<NumType> {
 	}
 
 	// multiply monomial by a scalar to get a monomial in return with the same independent variables
-	public static MonoEx<NumType> operator *(MonoEx<NumType> mono1, NumType scalar) => new MonoEx<NumType>(mono1.Coefficient * scalar, mono1.independents);
-	public static MonoEx<NumType> operator *(NumType scalar, MonoEx<NumType> mono1) => new MonoEx<NumType>(mono1.Coefficient * scalar, mono1.independents);
+	public static MonoEx<NumType> operator *(MonoEx<NumType> mono1, NumType scalar) => new MonoEx<NumType>(ForcePrecision(mono1.Coefficient * scalar), mono1.independents);
+	public static MonoEx<NumType> operator *(NumType scalar, MonoEx<NumType> mono1) => new MonoEx<NumType>(ForcePrecision(mono1.Coefficient * scalar), mono1.independents);
 
 	// divide monomial by a scalar to get a monomial in return with the same independent variables
-	public static MonoEx<NumType> operator /(MonoEx<NumType> mono1, NumType scalar) => new MonoEx<NumType>(mono1.Coefficient / scalar, mono1.independents);
+	public static MonoEx<NumType> operator /(MonoEx<NumType> mono1, NumType scalar) => new MonoEx<NumType>(ForcePrecision(mono1.Coefficient / scalar), mono1.independents);
 
-	#region Equality and Hashing
+	#region Equality, Ordering, and Hashing
+
+	//
+	public static bool GreaterOrder(MonoEx<NumType> mono1, MonoEx<NumType> mono2) => mono1.CompareTo(mono2) < 0;
+
+	// nonstatic delegate for GreaterOrder
+	public bool HasGreaterOrderThan(MonoEx<NumType> other) => MonoEx<NumType>.GreaterOrder(this, other);
+
+	/// <summary>
+	/// if the monomials are like terms, order them by coefficient <br/>
+	/// if the monomials are not like terms, order them by degree then by coefficient <br/>
+	/// if the monomials are not like terms but have the same degree and coefficient, order lexicographically-ish
+	/// </summary>
+	/// <param name="other"></param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentException"></exception>
+	public int CompareTo(object? other) {
+
+		// this assumes precision has been forced consistently and accurately ... 
+
+		// less than 0: this comes before other
+		// 0: this and other are same
+		// greater than 0: this comes after other
+
+		if (other == null)
+			return -1;
+
+		if (other is MonoEx<NumType> otherMono) {
+
+			// if they have different independent variable counts, or same count dif degree,
+			// they cannot be alike.
+			// we check this first because IsLike is expensive and if either is condition is true, IsLike cannot be true
+			if (this.IsLike(otherMono))
+				return this.Coefficient.CompareTo(otherMono.coefficient);
+
+			int degreeCompare = this.Degree.CompareTo(otherMono.Degree);
+			if (degreeCompare != 0)
+				return degreeCompare * -1;
+
+			int coefCompare = this.Coefficient.CompareTo(otherMono.coefficient);
+			if (coefCompare != 0)
+				return coefCompare * -1;
+
+			int scoreCompare = this.VariableLexicalScore().CompareTo(otherMono.VariableLexicalScore());
+
+			return scoreCompare * -1;
+
+		}
+		else
+			throw new ArgumentException("Object is not a MonoEx, cannot compare to other MonoEx!");
+
+	}
+
+
+	/// <summary>
+	/// returns true if same vars with same degree (deep check on dict)
+	/// </summary>
+	/// <param name="other"></param>
+	/// <returns></returns>
+	public bool IsLike(MonoEx<NumType> otherMono) {
+
+		if (otherMono.IndependentVariables.Count != this.IndependentVariables.Count
+			|| ( this.IndependentVariableCount == otherMono.IndependentVariableCount && this.Degree != otherMono.Degree ))
+			return false;
+
+		foreach (var (independent, degree) in this.independents)
+			if (!otherMono.independents.TryGetValue(independent, out var otherDegree) || ForcePrecision(degree) != ForcePrecision(otherDegree))
+				return false;
+
+		foreach (var (independent, degree) in otherMono.independents)
+			if (!this.independents.TryGetValue(independent, out var otherDegree) || ForcePrecision(degree) != ForcePrecision(otherDegree))
+				return false;
+
+		return true;
+
+	}
 
 	public override bool Equals(object? other) {
 
@@ -257,11 +366,15 @@ public class MonoEx<NumType> where NumType : INumber<NumType> {
 	// if the independent variable references are equal, the objects are equal
 	// finally, if all else fails, we have to check to see if mono1 and mono2 have the same independent variables and coefficients (slow).
 	//		if so, they are equal
-	public static bool operator ==(MonoEx<NumType> mono1, MonoEx<NumType> mono2) => ( ReferenceEquals(mono1, mono2) )
-																							|| mono1 is null || mono2 is null
-																							|| ReferenceEquals(mono1.independents, mono2.independents)
-																							|| ( mono1.IsLike(mono2) && mono1.Coefficient == mono2.Coefficient );
+	public static bool operator ==(MonoEx<NumType> mono1, MonoEx<NumType> mono2) => ReferenceEquals(mono1.independents, mono2.independents)
+																						|| ( mono1.IsLike(mono2)
+																						&& ForcePrecision(mono1.Coefficient) == ForcePrecision(mono2.Coefficient) );
 	public static bool operator !=(MonoEx<NumType> mono1, MonoEx<NumType> mono2) => !( mono1 == mono2 );
+
+	// a monomial is equal to a scalar if it has no independent variables and its coefficient is equal to the scalar
+	public static bool operator ==(MonoEx<NumType> mono1, NumType num) => ( mono1.independents == null || mono1.independents.Count == 0 )
+																			&& ForcePrecision(mono1.Coefficient) == ForcePrecision(num);
+	public static bool operator !=(MonoEx<NumType> mono1, NumType num) => !( mono1 == num );
 
 	// this has to match the logic in .equals()
 	// .equals() delegates to ==
@@ -274,13 +387,13 @@ public class MonoEx<NumType> where NumType : INumber<NumType> {
 	public override int GetHashCode() {
 
 		HashCode hash = new HashCode();
-		hash.Add(coefficient);
+		hash.Add(ForcePrecision(coefficient));
 
 		if (independents != null) {
 
-			foreach (var key in independents.Keys.OrderBy(k => k)) {
+			foreach (var key in independents.Keys.OrderBy(k => k)) { // todo: this is too slow for a hash function , but it is necessary to ensure that the order of the variables does not affect the hash (e.g. 2xy and 2yx should have the same hash). If this becomes a bottleneck, we can consider caching the hash code or using a different data structure for independents that maintains a consistent order.
 				hash.Add(key);
-				hash.Add(independents[key]);
+				hash.Add(ForcePrecision(independents[key]));
 			}
 
 		}
@@ -300,17 +413,25 @@ public class MonoEx<NumType> where NumType : INumber<NumType> {
 			return NumType.Zero.ToString();
 
 		// if the coefficient is one, it will be left out 
-		string ret = ( coefficient == NumType.One ) ? "" : coefficient.ToString();
+		string ret = ( coefficient == NumType.One && independents.Count != 0 ) ? "" : coefficient.ToString();
 
 		// all vars with powers and wrapped in parenthesis
-		foreach (var (independent, degree) in independents)
-			ret += "(" + independent + DegreeToString(degree) + ")";
+		foreach (var (independent, degree) in independents) {
+
+			if (degree == NumType.Zero)
+				ret += "1";
+			else
+				ret += "(" + independent + DegreeToString(degree) + ")";
+
+		}
+
 
 		return ret;
 
 	}
 
 }
+
 
 
 
