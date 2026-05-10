@@ -408,14 +408,16 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 
 	#endregion
 
-	override public string ToString() {
+	public string AbsToString() {
 
 		// if coef is 0, whole thing is 0
 		if (coefficient == NumType.Zero)
 			return NumType.Zero.ToString();
 
+		NumType absCoef = NumType.Abs(coefficient);
+
 		// if the coefficient is one, it will be left out 
-		string ret = ( coefficient == NumType.One && independents.Count != 0 ) ? "" : coefficient.ToString();
+		string ret = ( absCoef == NumType.One ) ? "" : absCoef.ToString();
 
 		// all vars with powers and wrapped in parenthesis
 		foreach (var (independent, degree) in independents) {
@@ -427,10 +429,11 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 
 		}
 
-
 		return ret;
 
 	}
+
+	override public string ToString() => coefficient < NumType.Zero ? "-" + AbsToString() : AbsToString();
 
 }
 
