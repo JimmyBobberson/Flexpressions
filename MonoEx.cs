@@ -160,6 +160,8 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 	public MonoEx(MonoEx<NumType> other, NumType newCoefficient) :
 		this(newCoefficient, new IdpList(other.independents)) { }
 
+	public MonoEx() : this(NumType.Zero) { }
+
 	/// <summary>
 	/// Returns a monomial with the same coefficient and variables but opposite sign
 	/// </summary>

@@ -46,19 +46,28 @@ public readonly struct PolyEx<NumType> where NumType : INumber<NumType> {
 
 			this.symbol = symbol;
 
-			if (symbol is not null && ( ( symbol == MINUS && mono.Coefficient < NumType.Zero ) || ( symbol == PLUS && mono.Coefficient == NumType.Zero ) )) {
+			this.mono = mono;
 
-				this.mono = mono.Flipped();
-				this.symbol = ( this.symbol == PLUS ) ? MINUS : PLUS;
-
-			}
-			else
-				this.mono = mono;
+			SimplifyNegativeExpression();
 
 		}
 
-		override public string ToString() => ( ( symbol != null ) ? symbol + " " : "" )
-											+ mono + " ";
+		// combine the monomials sign and the node's operation, so - - becomes + and + - becomes - 
+		private void SimplifyNegativeExpression() {
+
+			// simplifications only apply to negative terms
+			// - - becomes + +
+			// + - becomes - + 
+			if (mono.Coefficient < NumType.Zero && symbol is not null) {
+
+				mono = mono.Flipped();
+				symbol = ( this.symbol == PLUS ) ? MINUS : PLUS;
+
+			}
+
+		}
+
+		override public string ToString() => ( ( symbol != null ) ? symbol + " " : "" ) + mono + " ";
 
 		/// <summary>
 		/// Set symbol to null. If symbol was minus, associated mono absorbs it, flipping its sign. <br/>
@@ -118,13 +127,20 @@ public readonly struct PolyEx<NumType> where NumType : INumber<NumType> {
 
 			}
 
-			set => mono = value;
+			set {
+
+				mono = value;
+
+				SimplifyNegativeExpression();
+
+			}
 
 		}
 
 		// more efficient and preferred over calling Mono.Degree
 		public NumType Degree => mono.Degree;
 
+		// delegates to the monomial's compareto 
 		public int CompareTo(object? other) {
 
 			if (other == null)
@@ -141,19 +157,21 @@ public readonly struct PolyEx<NumType> where NumType : INumber<NumType> {
 
 	}
 
-	private readonly SortedSet<MonoNode> termSeries;
+	private readonly List<MonoNode> termSeries;
 
-	private PolyEx(SortedSet<MonoNode> termSeries) => this.termSeries = termSeries;
+	private PolyEx(List<MonoNode> termSeries) => this.termSeries = termSeries;
 
 	private PolyEx(MonoNode term) {
 
-		SortedSet<MonoNode> termSeries = new SortedSet<MonoNode>();
+		List<MonoNode> termSeries = new List<MonoNode>();
 
 		termSeries.Add(term);
 
 		this.termSeries = termSeries;
 
 	}
+
+	public PolyEx() => termSeries = new List<MonoNode>();
 
 	#endregion
 
@@ -171,7 +189,7 @@ public readonly struct PolyEx<NumType> where NumType : INumber<NumType> {
 	/// <returns></returns>
 	public static PolyEx<NumType> CombineMonomials(MonoEx<NumType> mono1, MonoEx<NumType> mono2, bool subtract = false) {
 
-		SortedSet<MonoNode> termSeries = new SortedSet<MonoNode>();
+		List<MonoNode> termSeries = new List<MonoNode>();
 
 		// if the monomials are like terms, just sum their coefficients
 		// resulting polynomial will only have 1 term, but its best if we always return a polynomial when we do +/- 
@@ -185,7 +203,7 @@ public readonly struct PolyEx<NumType> where NumType : INumber<NumType> {
 		}
 		else {
 
-			MonoNode node1 = new MonoNode(PLUS, mono1);
+			MonoNode node1 = new MonoNode(null, mono1);
 			MonoNode node2 = new MonoNode(subtract ? MINUS : PLUS, mono2);
 
 			termSeries.Add(node1);
@@ -197,41 +215,76 @@ public readonly struct PolyEx<NumType> where NumType : INumber<NumType> {
 
 	}
 
-	private static PolyEx<NumType> InsertMonomialInto(PolyEx<NumType> poly, MonoEx<NumType> mono, bool subtract = false) {
+	private static PolyEx<NumType> InsertMonomialInto(PolyEx<NumType> poly, MonoEx<NumType> toInsert, bool subtract = false) {
 
-		MonoNode toAdd = new MonoNode(subtract ? MINUS : PLUS, mono);
+		// create series to be used for new PolyEx as a copy of poly's series
+		List<MonoNode> monoSeries = new();
+		foreach (MonoNode node in poly.termSeries)
+			monoSeries.Add(node);
 
-		// the add operation will fail if you try to add a monomial that is already in the polynomial,
-		// in which case we remove that term, double it, then add it back
-		if (!poly.termSeries.Add(toAdd)) {
+		// node to be added
+		MonoNode nodeToAdd = new MonoNode(subtract ? MINUS : PLUS, toInsert);
 
-			poly.termSeries.Remove(toAdd);
+		// see if poly contains a term like toInsert 
+		int? idxToRemove = null;
+		bool foundLikeTerm = false;
+		for (int i = 0; i < monoSeries.Count; i++) {
 
-			poly.termSeries.Add(new MonoNode(subtract ? MINUS : PLUS, mono * NumType.CreateChecked(2)));
+			var mono = monoSeries[i].Mono;
 
+			if (mono.IsLike(toInsert)) {
+
+				foundLikeTerm = true;
+
+				NumType coefficientSum = toInsert.Coefficient + ( mono.Coefficient * ( subtract ? NumType.CreateChecked(-1) : NumType.One ) );
+
+				if (coefficientSum == NumType.Zero)
+					idxToRemove = i;
+				else
+					monoSeries[i] = new MonoNode(PLUS, new MonoEx<NumType>(toInsert, coefficientSum));
+
+				break;
+
+			}
 		}
 
-		return poly;
+		if (idxToRemove != null)
+			monoSeries.RemoveAt((int)idxToRemove);
+		// toInsert is not a like term of any element in the polynomial so we will insert it normally
+		else if (!foundLikeTerm)
+			monoSeries.Add(nodeToAdd);
+
+		return new PolyEx<NumType>(monoSeries);
 
 	}
 
 	public static PolyEx<NumType> operator +(PolyEx<NumType> poly, MonoEx<NumType> mono) => InsertMonomialInto(poly, mono);
 	public static PolyEx<NumType> operator +(PolyEx<NumType> poly1, PolyEx<NumType> poly2) {
 
-		foreach (MonoNode node in poly2.termSeries)
-			InsertMonomialInto(poly1, node.Mono);
+		PolyEx<NumType> polySum = new PolyEx<NumType>();
 
-		return poly1;
+		foreach (MonoNode node in poly1.termSeries)
+			polySum = InsertMonomialInto(polySum, node.Mono);
+
+		foreach (MonoNode node in poly2.termSeries)
+			polySum = InsertMonomialInto(polySum, node.Mono);
+
+		return polySum;
 
 	}
 
 	public static PolyEx<NumType> operator -(PolyEx<NumType> poly, MonoEx<NumType> mono) => InsertMonomialInto(poly, mono, true);
 	public static PolyEx<NumType> operator -(PolyEx<NumType> poly1, PolyEx<NumType> poly2) {
 
-		foreach (MonoNode node in poly2.termSeries)
-			InsertMonomialInto(poly1, node.Mono, true);
+		PolyEx<NumType> polySum = new PolyEx<NumType>();
 
-		return poly1;
+		foreach (MonoNode node in poly1.termSeries)
+			polySum = InsertMonomialInto(polySum, node.Mono);
+
+		foreach (MonoNode node in poly2.termSeries)
+			polySum = InsertMonomialInto(polySum, node.Mono, true);
+
+		return polySum;
 
 	}
 
@@ -242,18 +295,18 @@ public readonly struct PolyEx<NumType> where NumType : INumber<NumType> {
 	/// </summary>
 	/// <param name="index"></param>
 	/// <returns></returns>
-	/*public MonoEx<NumType> this[int idx] {
+	public MonoEx<NumType> this[int idx] {
 
 		get {
 
 			if (idx >= 0 && idx < termSeries.Count)
-				return termSeries.
+				return termSeries[idx].Mono;
 
 			throw new IndexOutOfRangeException("Attempted to access out-of-range monomial within polynomial");
 
 		}
 
-	}*/
+	}
 
 	#endregion
 
@@ -265,16 +318,16 @@ public readonly struct PolyEx<NumType> where NumType : INumber<NumType> {
 	public int Length => termSeries.Count;
 
 	/// <summary>
-	/// return the ordered SortedSet of monomials in this polynomial expression (creates a new SortedSet)
+	/// return the ordered List of monomials in this polynomial expression (creates a new List)
 	/// </summary>
-	public SortedSet<MonoEx<NumType>> MonomialSortedSet => new SortedSet<MonoEx<NumType>>(termSeries.Select(monoNode => monoNode.Mono));
+	public List<MonoEx<NumType>> MonomialList => new List<MonoEx<NumType>>(termSeries.Select(monoNode => monoNode.Mono));
 
 
 	/// <summary>
 	/// returns the highest degree monomial in the polynomial expression.
 	/// the degree of a monomial is defined as the sum of the degrees of each of its independent variables
 	/// </summary>
-	public NumType Degree => termSeries is not null && termSeries.Count > 0 ? termSeries.Min.Degree : NumType.Zero;
+	//public NumType Degree => termSeries is not null && termSeries.Count > 0 ? termSeries.Min.Degree : NumType.Zero;
 
 	#endregion
 
@@ -287,11 +340,10 @@ public readonly struct PolyEx<NumType> where NumType : INumber<NumType> {
 
 			if (firstNode) {
 
-				MonoNode.RemoveSymbol(); // this should be called somewhere better
+				MonoNode.RemoveSymbol();
 				firstNode = false;
 
 			}
-
 
 			ret += MonoNode;
 

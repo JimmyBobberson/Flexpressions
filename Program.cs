@@ -27,16 +27,19 @@ class Program {
 	static void Main(string[] args) {
 
 
-		PolyEx<int> mono = new MonoEx<int>('x', 2) * new MonoEx<int>(3, 'y', 1);
-		PolyEx<int> coef = new MonoEx<int>(1) + new MonoEx<int>(2);
-		PolyEx<int> binomial = new MonoEx<int>('x', 1) + new MonoEx<int>('x', 5);
+		MonoEx<int> mono = new MonoEx<int>('x', 2) * new MonoEx<int>(3, 'y', 1); // 3yx^2
+		MonoEx<int> mono2 = new MonoEx<int>('x', 2) * new MonoEx<int>(9, 'y', 1); // 3yx^2
+		PolyEx<int> coef = new MonoEx<int>(1) + new MonoEx<int>(2); // 3
+		PolyEx<int> binomial = new MonoEx<int>('x', 1) + new MonoEx<int>('x', 5); // x^5 + x
 		PolyEx<int> multivar = new MonoEx<int>('x', 1) + mono;
 
-		Console.WriteLine(coef);
-		Console.WriteLine(binomial);
-		Console.WriteLine(multivar);
-		Console.WriteLine(binomial + mono);
-		Console.WriteLine(binomial + multivar);
+		// TODO:consider immutable list
+
+		Console.WriteLine(binomial + binomial - binomial + multivar + coef);
+		Console.WriteLine(binomial + binomial + multivar - binomial + coef);
+
+
+		//Console.WriteLine(multivar);
 
 	}
 
