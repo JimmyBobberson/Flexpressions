@@ -268,6 +268,7 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 	// multiply monomial by a scalar to get a monomial in return with the same independent variables
 	public static MonoEx<NumType> operator *(MonoEx<NumType> mono1, NumType scalar) => new MonoEx<NumType>(ForcePrecision(mono1.Coefficient * scalar), mono1.independents);
 	public static MonoEx<NumType> operator *(NumType scalar, MonoEx<NumType> mono1) => new MonoEx<NumType>(ForcePrecision(mono1.Coefficient * scalar), mono1.independents);
+	public static MonoEx<NumType> operator -(MonoEx<NumType> mono) => mono * NumType.CreateChecked(-1);
 
 	// divide monomial by a scalar to get a monomial in return with the same independent variables
 	public static MonoEx<NumType> operator /(MonoEx<NumType> mono1, NumType scalar) => new MonoEx<NumType>(ForcePrecision(mono1.Coefficient / scalar), mono1.independents);

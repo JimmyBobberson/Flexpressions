@@ -21,7 +21,8 @@ namespace Flexpressions;
 
 // todo: implement "complex functions" which can have trig, log, exponent, rational, etc (but do not have derivative)
 // todo: disallowed chars list for monomial independent vars, including numbers and operators (perhaps throw an exception)
-
+// todo: polyex list capaicty optimization
+// TODO:consider immutable list
 class Program {
 
 	static void Main(string[] args) {
@@ -33,10 +34,15 @@ class Program {
 		PolyEx<int> binomial = new MonoEx<int>('x', 1) + new MonoEx<int>('x', 5); // x^5 + x
 		PolyEx<int> multivar = new MonoEx<int>('x', 1) + mono;
 
-		// TODO:consider immutable list
 
-		Console.WriteLine(binomial + binomial - binomial + multivar + coef);
-		Console.WriteLine(binomial + binomial + multivar - binomial + coef);
+		Console.WriteLine(binomial + multivar + binomial - binomial);
+		Console.WriteLine(binomial - binomial + multivar + binomial);
+		Console.WriteLine(multivar - binomial - binomial + multivar + binomial + multivar + multivar);
+
+		foreach (var bar in binomial)
+			Console.WriteLine(bar);
+
+		//x^5 + x + 3 + 3yx^2 
 
 
 		//Console.WriteLine(multivar);

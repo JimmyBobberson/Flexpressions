@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace Flexpressions;
-
 
 /// <summary>
 /// <b>A PolyEx (polynomial expression) is a series of MonoEx objects chained together by operators (+/-).</b> <para/>
@@ -22,7 +22,7 @@ namespace Flexpressions;
 /// PolyEx objects are immutable and all operations return a new object.<br/>
 /// </summary>
 /// <typeparam name="NumType"></typeparam>
-public readonly struct PolyEx<NumType> where NumType : INumber<NumType> {
+public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumType : INumber<NumType> {
 
 	#region Static Helpers
 
@@ -33,10 +33,12 @@ public readonly struct PolyEx<NumType> where NumType : INumber<NumType> {
 
 	#region State and Constructors
 
+	// pseudoalias wrapper
 	private class MonoSeries : List<MonoEx<NumType>> {
 
 		public MonoSeries() : base() { }
 		public MonoSeries(MonoSeries other) : base(other) { }
+		public MonoSeries(int cap) : base(cap) { }
 
 	}
 
@@ -72,7 +74,7 @@ public readonly struct PolyEx<NumType> where NumType : INumber<NumType> {
 	/// <returns></returns>
 	public static PolyEx<NumType> CombineMonomials(MonoEx<NumType> mono1, MonoEx<NumType> mono2, bool subtract = false) {
 
-		MonoSeries termSeries = new MonoSeries();
+		MonoSeries termSeries = new MonoSeries(2);
 
 		// if the monomials are like terms, just sum their coefficients
 		// resulting polynomial will only have 1 term, but its best if we always return a polynomial when we do +/- 
@@ -100,8 +102,8 @@ public readonly struct PolyEx<NumType> where NumType : INumber<NumType> {
 	private static PolyEx<NumType> InsertMonomialInto(PolyEx<NumType> poly, MonoEx<NumType> toInsert, bool subtract = false) {
 
 		// create series to be used for new PolyEx as a copy of poly's series
-		MonoSeries monoSeries = new();
-		foreach (var node in poly.termSeries)
+		MonoSeries monoSeries = new(poly.Count + 1);
+		foreach (var node in poly.MonoSpan)
 			monoSeries.Add(node);
 
 		// see if poly contains a term like toInsert 
@@ -115,7 +117,7 @@ public readonly struct PolyEx<NumType> where NumType : INumber<NumType> {
 
 				foundLikeTerm = true;
 
-				NumType coefficientSum = toInsert.Coefficient + ( mono.Coefficient * ( subtract ? NumType.CreateChecked(-1) : NumType.One ) );
+				NumType coefficientSum = mono.Coefficient + ( toInsert.Coefficient * ( subtract ? NumType.CreateChecked(-1) : NumType.One ) );
 
 				if (coefficientSum == NumType.Zero)
 					idxToRemove = i;
@@ -142,10 +144,12 @@ public readonly struct PolyEx<NumType> where NumType : INumber<NumType> {
 
 		PolyEx<NumType> polySum = new PolyEx<NumType>();
 
-		foreach (var mono in poly1.termSeries)
-			polySum = InsertMonomialInto(polySum, mono);
+		// make a copy of poly1 
+		foreach (var mono in poly1.MonoSpan)
+			polySum.termSeries.Add(mono);
 
-		foreach (var mono in poly2.termSeries)
+		// add each mono from poly2 into the copy of poly1 
+		foreach (var mono in poly2.MonoSpan)
 			polySum = InsertMonomialInto(polySum, mono);
 
 		return polySum;
@@ -157,16 +161,28 @@ public readonly struct PolyEx<NumType> where NumType : INumber<NumType> {
 
 		PolyEx<NumType> polySum = new PolyEx<NumType>();
 
-		foreach (var mono in poly1.termSeries)
-			polySum = InsertMonomialInto(polySum, mono);
+		// make a copy of poly1 
+		foreach (var mono in poly1.MonoSpan)
+			polySum.termSeries.Add(mono);
 
-		foreach (var mono in poly2.termSeries)
+		// subtract each mono from poly2 into the copy of poly1 
+		foreach (var mono in poly2.MonoSpan)
 			polySum = InsertMonomialInto(polySum, mono, true);
 
 		return polySum;
 
 	}
 
+	public static PolyEx<NumType> operator -(PolyEx<NumType> poly) {
+
+		MonoSeries monoSeries = new MonoSeries(poly.Count);
+
+		foreach (var mono in poly.MonoSpan)
+			monoSeries.Add(-mono);
+
+		return new PolyEx<NumType>(monoSeries);
+
+	}
 
 	/// <summary>
 	/// access an monomial of the polynomial expression
@@ -194,7 +210,7 @@ public readonly struct PolyEx<NumType> where NumType : INumber<NumType> {
 	/// <summary>
 	/// total number of monmials that make up this polynomial expression
 	/// </summary>
-	public int Length => termSeries.Count;
+	public int Count => termSeries.Count;
 
 	/// <summary>
 	/// return the ordered List of monomials in this polynomial expression (creates a new List)
@@ -208,14 +224,31 @@ public readonly struct PolyEx<NumType> where NumType : INumber<NumType> {
 	/// </summary>
 	//public NumType Degree => termSeries is not null && termSeries.Count > 0 ? termSeries.Min.Degree : NumType.Zero;
 
+	private readonly Span<MonoEx<NumType>> MonoSpan => CollectionsMarshal.AsSpan(termSeries);
+
+
+	public IEnumerator<MonoEx<NumType>> GetEnumerator() {
+
+		foreach (var mono in termSeries)
+			yield return mono;
+
+	}
+
+	// not sure what this does
+	System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+
 	#endregion
 
 	public override string ToString() {
 
+		if (termSeries.Count == 0)
+			return NumType.Zero.ToString();
+
 		string ret = "";
 
 		bool firstNode = true;
-		foreach (var mono in termSeries) {
+
+		foreach (var mono in MonoSpan) {
 
 			if (firstNode) {
 
