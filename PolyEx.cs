@@ -64,6 +64,8 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 
 	// mono to poly
 	public static implicit operator PolyEx<NumType>(MonoEx<NumType> mono) => new PolyEx<NumType>(mono);
+	public static implicit operator PolyEx<NumType>(NumType num) => new PolyEx<NumType>(new MonoEx<NumType>(coefficient: num));
+	public static implicit operator PolyEx<NumType>(FlexVar idp) => new PolyEx<NumType>(new MonoEx<NumType>(independent: idp, degree: NumType.One));
 
 	/// <summary>
 	/// performs mono1 (+/-) mono2 and returns the resulting polynomial expression
@@ -103,7 +105,7 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 
 		// create series to be used for new PolyEx as a copy of poly's series
 		MonoSeries monoSeries = new(poly.Count + 1);
-		foreach (var node in poly.MonoSpan)
+		foreach (var node in poly.AsSpan())
 			monoSeries.Add(node);
 
 		// see if poly contains a term like toInsert 
@@ -145,11 +147,11 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 		PolyEx<NumType> polySum = new PolyEx<NumType>();
 
 		// make a copy of poly1 
-		foreach (var mono in poly1.MonoSpan)
+		foreach (var mono in poly1.AsSpan())
 			polySum.termSeries.Add(mono);
 
 		// add each mono from poly2 into the copy of poly1 
-		foreach (var mono in poly2.MonoSpan)
+		foreach (var mono in poly2.AsSpan())
 			polySum = InsertMonomialInto(polySum, mono);
 
 		return polySum;
@@ -162,11 +164,11 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 		PolyEx<NumType> polySum = new PolyEx<NumType>();
 
 		// make a copy of poly1 
-		foreach (var mono in poly1.MonoSpan)
+		foreach (var mono in poly1.AsSpan())
 			polySum.termSeries.Add(mono);
 
 		// subtract each mono from poly2 into the copy of poly1 
-		foreach (var mono in poly2.MonoSpan)
+		foreach (var mono in poly2.AsSpan())
 			polySum = InsertMonomialInto(polySum, mono, true);
 
 		return polySum;
@@ -177,7 +179,7 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 
 		MonoSeries monoSeries = new MonoSeries(poly.Count);
 
-		foreach (var mono in poly.MonoSpan)
+		foreach (var mono in poly.AsSpan())
 			monoSeries.Add(-mono);
 
 		return new PolyEx<NumType>(monoSeries);
@@ -217,15 +219,14 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 	/// </summary>
 	public List<MonoEx<NumType>> MonomialList => new List<MonoEx<NumType>>(termSeries).ToList();
 
-
 	/// <summary>
 	/// returns the highest degree monomial in the polynomial expression.
 	/// the degree of a monomial is defined as the sum of the degrees of each of its independent variables
 	/// </summary>
 	//public NumType Degree => termSeries is not null && termSeries.Count > 0 ? termSeries.Min.Degree : NumType.Zero;
 
-	private readonly Span<MonoEx<NumType>> MonoSpan => CollectionsMarshal.AsSpan(termSeries);
-
+	// allows memory to be read directly 
+	internal ReadOnlySpan<MonoEx<NumType>> AsSpan() => CollectionsMarshal.AsSpan(termSeries);
 
 	public IEnumerator<MonoEx<NumType>> GetEnumerator() {
 
@@ -242,13 +243,13 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 	public override string ToString() {
 
 		if (termSeries.Count == 0)
-			return NumType.Zero.ToString();
+			return "" + NumType.Zero;
 
 		string ret = "";
 
 		bool firstNode = true;
 
-		foreach (var mono in MonoSpan) {
+		foreach (var mono in this.AsSpan()) {
 
 			if (firstNode) {
 

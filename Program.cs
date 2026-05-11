@@ -22,30 +22,23 @@ namespace Flexpressions;
 // todo: implement "complex functions" which can have trig, log, exponent, rational, etc (but do not have derivative)
 // todo: disallowed chars list for monomial independent vars, including numbers and operators (perhaps throw an exception)
 // todo: polyex list capaicty optimization
-// TODO:consider immutable list
+// TODO: make everything mutable
+
 class Program {
 
 	static void Main(string[] args) {
 
+		//FlexVar.x;
 
-		MonoEx<int> mono = new MonoEx<int>('x', 2) * new MonoEx<int>(3, 'y', 1); // 3yx^2
-		MonoEx<int> mono2 = new MonoEx<int>('x', 2) * new MonoEx<int>(9, 'y', 1); // 3yx^2
-		PolyEx<int> coef = new MonoEx<int>(1) + new MonoEx<int>(2); // 3
-		PolyEx<int> binomial = new MonoEx<int>('x', 1) + new MonoEx<int>('x', 5); // x^5 + x
-		PolyEx<int> multivar = new MonoEx<int>('x', 1) + mono;
+		//PolyEx<int> p = 'x' + 2 + 3 * 'y';
 
+		MonoEx<float> funny = new MonoEx<float>(3, FlexVar.x, 3);
+		MonoEx<float> funny2 = new MonoEx<float>(3);
 
-		Console.WriteLine(binomial + multivar + binomial - binomial);
-		Console.WriteLine(binomial - binomial + multivar + binomial);
-		Console.WriteLine(multivar - binomial - binomial + multivar + binomial + multivar + multivar);
-
-		foreach (var bar in binomial)
-			Console.WriteLine(bar);
-
-		//x^5 + x + 3 + 3yx^2 
-
-
-		//Console.WriteLine(multivar);
+		Console.WriteLine(funny);
+		Console.WriteLine(funny2);
+		Console.WriteLine(funny2 + funny);
+		Console.WriteLine(funny + funny2 + funny);
 
 	}
 
