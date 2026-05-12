@@ -44,6 +44,8 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 	// convert a degree number to its string representation 
 	static private string DegreeToString(NumType degree) {
 
+		// Math.Pow(degree, degree);
+
 		if (degree == null)
 			return "";
 
@@ -91,6 +93,8 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 	public static NumType ForcePrecision(NumType value) {
 		return value switch {
 
+			// deeply unfortunate manual type check but i couldnt come up with an alternative
+
 			double d => (NumType)(object)Math.Round(d, DECIMAL_PRECISION, MidpointRounding.AwayFromZero),
 			float f => (NumType)(object)MathF.Round(f, DECIMAL_PRECISION, MidpointRounding.AwayFromZero),
 			decimal dec => (NumType)(object)Math.Round(dec, DECIMAL_PRECISION, MidpointRounding.AwayFromZero),
@@ -116,7 +120,7 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 
 		this.coefficient = ForcePrecision(coefficient);
 
-		this.idpDegrees = new NumType[FlexVar.NUM_VARS];
+		this.idpDegrees = new NumType[Flex<NumType>.NUM_VARS];
 		for (int i = 0; i < idpDegrees.Length; i++)
 			this.idpDegrees[i] = ForcePrecision(idpDegrees[i]);
 
@@ -125,13 +129,13 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 	public MonoEx(NumType coefficient) {
 
 		this.coefficient = ForcePrecision(coefficient);
-		idpDegrees = new NumType[FlexVar.NUM_VARS];
+		idpDegrees = new NumType[Flex<NumType>.NUM_VARS];
 
 	}
 
-	public MonoEx(NumType coefficient, FlexVar independent, NumType degree) : this(coefficient) => idpDegrees[independent.Id] = ForcePrecision(degree);
+	public MonoEx(NumType coefficient, Flex<NumType> independent, NumType degree) : this(coefficient) => idpDegrees[independent.Id] = ForcePrecision(degree);
 
-	public MonoEx(FlexVar independent, NumType degree) : this(NumType.One, independent, degree) { }
+	public MonoEx(Flex<NumType> independent, NumType degree) : this(NumType.One, independent, degree) { }
 
 	public MonoEx(MonoEx<NumType> other) : this(other.coefficient, other.idpDegrees) { }
 
@@ -148,7 +152,7 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 	///<summary>
 	/// returns the degree of a given independent variable in the monomial (zero if the variable is not explicitly present)
 	///</summary>
-	public NumType DegreeOfVariable(FlexVar idpVar) => idpDegrees[idpVar.Id];
+	public NumType DegreeOfVariable(Flex<NumType> idpVar) => idpDegrees[idpVar.Id];
 
 	/// <summary>
 	/// returns the count of all independent variables in the monomial
@@ -178,11 +182,6 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 	/// returns the sum of all degrees of the independent variables in the monomial expression, which is the total degree of the monomial
 	///</summary>
 	public NumType Degree => idpDegrees.Aggregate(NumType.Zero, (current, next) => current + next);
-
-	///<summary>
-	/// returns the monomial in its written out form
-	///</summary>
-	public string Expression => ToString();
 
 	/// <summary>
 	/// Used as a tiebreaker for CompareTo by seeing which vars are present in the expression
@@ -214,7 +213,7 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 	public static MonoEx<NumType> operator *(MonoEx<NumType> mono1, MonoEx<NumType> mono2) {
 
 		NumType coefficientProduct = ForcePrecision(mono1.coefficient * mono2.coefficient);
-		NumType[] combinedVars = new NumType[FlexVar.NUM_VARS];
+		NumType[] combinedVars = new NumType[Flex<NumType>.NUM_VARS];
 
 		// if either monomial is zero, skip all this var work
 		if (coefficientProduct != NumType.Zero)
@@ -237,7 +236,7 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 	public static MonoEx<NumType> operator /(NumType scalar, MonoEx<NumType> mono1) {
 
 		NumType coef = scalar / mono1.coefficient;
-		NumType[] idpList = new NumType[FlexVar.NUM_VARS];
+		NumType[] idpList = new NumType[Flex<NumType>.NUM_VARS];
 
 		// flip all signs cuz thats how this division works
 		for (int i = 0; i < idpList.Length; i++)
@@ -248,8 +247,9 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 	}
 
 	public static implicit operator MonoEx<NumType>(NumType num) => new MonoEx<NumType>(coefficient: num);
+	public static implicit operator MonoEx<NumType>(Flex<NumType> idp) => new MonoEx<NumType>(independent: idp, degree: NumType.One);
 
-	public static implicit operator MonoEx<NumType>(FlexVar idp) => new MonoEx<NumType>(independent: idp, degree: NumType.One);
+	#endregion
 
 	#region Equality, Ordering, and Hashing
 
@@ -302,7 +302,6 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 			throw new ArgumentException("Object is not a MonoEx, cannot compare to other MonoEx!");
 
 	}
-
 
 	/// <summary>
 	/// returns true if same vars with same degree (deep check on dict)
@@ -374,8 +373,6 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 
 	#endregion
 
-	#endregion
-
 	#region Stringy 
 
 	public string AbsToString() {
@@ -398,7 +395,7 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 
 			if (deg != NumType.Zero)
 				ret += ( !isAllAlone ? "(" : "" ) +
-					FlexVar.VAR_TO_CHAR[i] + DegreeToString(deg) +
+					Flex<NumType>.VAR_TO_CHAR[i] + DegreeToString(deg) +
 					( !isAllAlone ? ")" : "" );
 
 		}

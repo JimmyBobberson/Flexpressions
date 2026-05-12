@@ -65,7 +65,7 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 	// mono to poly
 	public static implicit operator PolyEx<NumType>(MonoEx<NumType> mono) => new PolyEx<NumType>(mono);
 	public static implicit operator PolyEx<NumType>(NumType num) => new PolyEx<NumType>(new MonoEx<NumType>(coefficient: num));
-	public static implicit operator PolyEx<NumType>(FlexVar idp) => new PolyEx<NumType>(new MonoEx<NumType>(independent: idp, degree: NumType.One));
+	public static implicit operator PolyEx<NumType>(Flex<NumType> idp) => new PolyEx<NumType>(new MonoEx<NumType>(independent: idp, degree: NumType.One));
 
 	/// <summary>
 	/// performs mono1 (+/-) mono2 and returns the resulting polynomial expression
