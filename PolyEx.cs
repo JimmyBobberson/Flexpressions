@@ -25,6 +25,7 @@ namespace Flexpressions;
 /// 
 // todo: ICollection
 // todo: IEquatable
+//
 public readonly struct PolyEx : IEnumerable<MonoEx> {
 
 	#region Static Helpers
@@ -103,7 +104,7 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 		}
 		else {
 
-			mono2 = subtract ? new MonoEx(mono2, mono2.Coefficient * -1) : mono2;
+			mono2 = subtract ? mono2.Flipped() : mono2;
 
 			termSeries.Add(mono1);
 			termSeries.Add(mono2);
@@ -148,7 +149,7 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 			monoSeries.RemoveAt((int)idxToRemove);
 		// toInsert is not a like term of any element in the polynomial so we will insert it normally
 		else if (!foundLikeTerm)
-			monoSeries.Add(toInsert);
+			monoSeries.Add(subtract ? toInsert.Flipped() : toInsert);
 
 		return new PolyEx(monoSeries);
 

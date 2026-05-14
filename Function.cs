@@ -107,6 +107,8 @@ public class Function {
 
 		this.poly = poly;
 
+		cachedFunctionString = null;
+
 		vars.Clear();
 
 		foreach (var mono in poly)

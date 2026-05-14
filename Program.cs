@@ -38,7 +38,7 @@ class Program {
 		Console.WriteLine(cutiepie);
 		Console.WriteLine(cutiepie.ExpressOutput(3, 10));
 
-		cutiepie.Expression = ( Flex.x ^ 2 ) + ( Flex.z ^ 2 ) - 6 * Flex.y - 12;
+		cutiepie.Expression = ( Flex.x ^ 2 ) + ( Flex.z ^ 2 ) - ( 6 * Flex.y ) + 12;
 		Console.WriteLine(cutiepie);
 		Console.WriteLine(cutiepie.ExpressOutput(3, 5, 7));
 

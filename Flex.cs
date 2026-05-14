@@ -36,7 +36,9 @@ public readonly record struct Flex {
 
 
 	public static MonoEx operator ^(Flex f, int deg) => new MonoEx(f, deg);
+
 	public static PolyEx operator +(Flex f1, Flex f2) => new MonoEx(f1) + new MonoEx(f2);
+
 	public static PolyEx operator *(double num, Flex f) => new MonoEx(num, f, 1);
 	public static PolyEx operator *(Flex f, double num) => num * f;
 
