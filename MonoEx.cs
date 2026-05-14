@@ -17,12 +17,11 @@ namespace Flexpressions;
 /// MonoEx objects are immutable and all operations return a new object.<br/>
 /// </summary>
 
-// todo: IEquatable
 // todo: IEnumerable
 // todo: IReadOnlyDictionary
 // todo: IParsable
 // todo: INumber
-public readonly struct MonoEx : IComparable {
+public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 
 	#region Static Config and Helper Stuff
 
@@ -102,7 +101,7 @@ public readonly struct MonoEx : IComparable {
 
 		this.coefficient = ForcePrecision(coefficient);
 
-		this.idpDegrees = new int[Flex.NUM_VARS];
+		this.idpDegrees = new int[Flex.NumVars];
 		for (int i = 0; i < idpDegrees.Length; i++)
 			this.idpDegrees[i] = idpDegrees[i];
 
@@ -111,7 +110,7 @@ public readonly struct MonoEx : IComparable {
 	internal MonoEx(double coefficient) {
 
 		this.coefficient = ForcePrecision(coefficient);
-		idpDegrees = new int[Flex.NUM_VARS];
+		idpDegrees = new int[Flex.NumVars];
 
 	}
 
@@ -168,22 +167,6 @@ public readonly struct MonoEx : IComparable {
 	///</summary>
 	public int Degree => idpDegrees.Aggregate(0, (current, next) => current + next);
 
-	/// <summary>
-	/// Used as a tiebreaker for CompareTo by seeing which vars are present in the expression
-	/// </summary>
-	/// <returns></returns>
-	private int VariableLexicalScore() {
-
-		int score = 0;
-
-		for (int i = 0; i < idpDegrees.Length; i++)
-			if (idpDegrees[i] != 0)
-				score += i;
-
-		return score;
-
-	}
-
 	#endregion
 
 	#region Operators (Public Interface for Construction)
@@ -218,7 +201,7 @@ public readonly struct MonoEx : IComparable {
 	public static MonoEx operator *(MonoEx mono1, MonoEx mono2) {
 
 		double coefficientProduct = ForcePrecision(mono1.coefficient * mono2.coefficient);
-		int[] combinedVars = new int[Flex.NUM_VARS];
+		int[] combinedVars = new int[Flex.NumVars];
 
 		// if either monomial is zero, skip all this var work
 		if (coefficientProduct != 0)
@@ -280,9 +263,9 @@ public readonly struct MonoEx : IComparable {
 	#region Comparison 
 
 	/// <summary>
+	/// Monomials with variables come first, then constant terms <br/>
 	/// if the monomials are like terms, order them by coefficient <br/>
 	/// if the monomials are not like terms, order them by degree then by coefficient <br/>
-	/// if the monomials are not like terms but have the same degree and coefficient, order lexicographically-ish
 	/// </summary>
 	/// <param name="other"></param>
 	/// <returns></returns>
@@ -295,6 +278,8 @@ public readonly struct MonoEx : IComparable {
 		// 0: this and other are same
 		// greater than 0: this comes after other
 
+		// note that variable priority is based on the int values of the Flex variables
+
 		if (other == null)
 			return -1;
 
@@ -303,6 +288,16 @@ public readonly struct MonoEx : IComparable {
 			// if they have different independent variable counts, or same count dif degree,
 			// they cannot be alike.
 			// we check this first because IsLike is expensive and if either is condition is true, IsLike cannot be true
+
+			// calculate variable comparison
+			// todo: can this be faster? 
+			int thisVariableScore = this.VariableScore();
+			int otherVariableScore = otherMono.VariableScore();
+
+			int variableCompare = thisVariableScore.CompareTo(otherVariableScore);
+			if (variableCompare != 0)
+				return variableCompare;
+
 			if (this.IsLike(otherMono))
 				return this.Coefficient.CompareTo(otherMono.coefficient);
 
@@ -311,12 +306,10 @@ public readonly struct MonoEx : IComparable {
 				return degreeCompare * -1;
 
 			int coefCompare = this.Coefficient.CompareTo(otherMono.coefficient);
-			if (coefCompare != 0)
-				return coefCompare * -1;
+			//if (coefCompare != 0)
+			return coefCompare * -1;
 
-			int scoreCompare = this.VariableLexicalScore().CompareTo(otherMono.VariableLexicalScore());
 
-			return scoreCompare * -1;
 
 		}
 		else
@@ -332,6 +325,28 @@ public readonly struct MonoEx : IComparable {
 	/// <param name="other"></param>
 	/// <returns>true if this would come before other in sorted order</returns>
 	public bool HasGreaterOrderThan(MonoEx other) => MonoEx.GreaterOrder(this, other);
+
+	// helper for CompareTo
+	/// <summary>
+	/// Used as a tiebreaker for CompareTo by seeing which vars are present in the expression
+	/// </summary>
+	/// <returns></returns>
+	private int VariableScore() {
+
+		// a term with just x gets a score of 0, so constant terms need to have an unbeatably high score
+		//		to make them distinct and make sure they come last in order
+		if (this.Degree == 0)
+			return int.MaxValue;
+
+		int score = 0;
+
+		for (int i = 0; i < idpDegrees.Length; i++)
+			if (idpDegrees[i] != 0)
+				score += i << i; // this bit shift ensures that each variable (index) gets a unique score. (ai generated line, used to be score += i) 
+
+		return score;
+
+	}
 
 	#endregion
 
@@ -370,6 +385,9 @@ public readonly struct MonoEx : IComparable {
 		return otherMono == this;
 
 	}
+
+	// needed for IEquatable
+	public bool Equals(MonoEx other) => this.Equals(other);
 
 	// this has to match the logic in .equals()
 	// .equals() delegates to ==
@@ -453,7 +471,7 @@ public readonly struct MonoEx : IComparable {
 
 			if (deg != 0)
 				sb.Append(!isAllAlone ? "(" : "")
-					.Append(Flex.NUM_TO_FLEX_CHAR[i])
+					.Append(Flex.NumToFlexChar[i])
 					.Append(DegreeToString(deg))
 					.Append(( !isAllAlone ? ")" : "" ));
 

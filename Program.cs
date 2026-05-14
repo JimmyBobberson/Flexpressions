@@ -3,8 +3,6 @@ using System.Diagnostics;
 
 namespace Flexpressions;
 
-// todo: all tostring use StringBuilder for optimization
-
 // todo: function calculus
 
 // todo: multiply polys
@@ -12,7 +10,7 @@ namespace Flexpressions;
 // todo: take monos and polys to power
 
 // todo: equality operators for polys
-// todo: equality operators between polys and monos (using casts?)
+// todo: equality operators between polys and monos 
 
 // todo: MonoEx.Zero ? and other common things?
 
@@ -29,7 +27,7 @@ class Program {
 		Console.WriteLine(cutiepie);
 		Console.WriteLine(cutiepie.ExpressOutput(3, 10));
 
-		cutiepie.Expression = ( Flex.x ^ 2 ) + ( Flex.z ^ 3 ) - ( 6 * Flex.y ) + 12;
+		cutiepie.Expression = ( Flex.x ^ 2 ) + ( Flex.z ^ 3 ) - ( 6 * Flex.y ) + 12 + Flex.x + ( Flex.z ^ 2 );
 		Console.WriteLine(cutiepie);
 		Console.WriteLine(cutiepie.ExpressOutput(3, 5, 7));
 

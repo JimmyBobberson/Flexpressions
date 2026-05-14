@@ -297,6 +297,12 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 
 	#endregion
 
+	#region Helpers
+
+	internal void Sort() => termSeries.Sort();
+
+	#endregion
+
 	#region Stringy
 
 	internal StringBuilder ToStringBuilder() {

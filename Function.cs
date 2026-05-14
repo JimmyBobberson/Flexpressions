@@ -109,7 +109,7 @@ public class Function {
 					// input for variable
 					double input = inputs[i];
 					// degree of varbiable
-					double deg = double.CreateChecked(mono.DegreeOfVariable(Flex.NUM_TO_FLEX[var]));
+					double deg = double.CreateChecked(mono.DegreeOfVariable(Flex.All[var]));
 
 					evaluatedTerm *= double.CreateChecked(double.Pow(input, deg));
 
@@ -184,6 +184,8 @@ public class Function {
 
 	private void UpdatePoly(PolyEx poly) {
 
+		poly.Sort();
+
 		this.poly = poly;
 
 		cachedFunctionString = null;
@@ -191,8 +193,8 @@ public class Function {
 		vars.Clear();
 
 		foreach (var mono in poly)
-			for (int i = 0; i < Flex.NUM_VARS; i++)
-				if (mono.DegreeOfVariable(Flex.NUM_TO_FLEX[i]) != 0)
+			for (int i = 0; i < Flex.NumVars; i++)
+				if (mono.DegreeOfVariable(Flex.All[i]) != 0)
 					vars.Add(i);
 
 	}
@@ -223,7 +225,7 @@ public class Function {
 
 			foreach (int idpVar in vars) {
 
-				sb.Append(Flex.NUM_TO_FLEX_CHAR[idpVar]).Append(( ( counter != 1 ) ? ", " : "" ));
+				sb.Append(Flex.NumToFlexChar[idpVar]).Append(( ( counter != 1 ) ? ", " : "" ));
 				counter--;
 
 			}

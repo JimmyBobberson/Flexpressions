@@ -1,11 +1,14 @@
+using System.Collections.Immutable;
 using System.Numerics;
+using System.Diagnostics;
 
 namespace Flexpressions;
 
 /// <summary>
 /// Flex objects represent independent variables used in Flexpressions objects (monomials, polynomials, functions); <br/>
 /// For example, Flex.x is just the variable "x." <br/>
-/// Flexpressions can only use the specific variables supported by the Flex type (currently can only use x, y, z)
+/// Flexpressions can only use the specific variables supported by the Flex type (currently can only use x, y, z). <br/>
+/// Use Flex.All to read through every defined variable
 /// </summary>
 public readonly record struct Flex {
 
@@ -22,10 +25,13 @@ public readonly record struct Flex {
 	/// <summary> The independent variable "x" </summary>
 	public static readonly Flex z = new(2, 'z');
 
-	internal static readonly Flex[] NUM_TO_FLEX = [x, y, z];
+	/// <summary>
+	/// List of all defined Flex variables
+	/// </summary>
+	public static readonly Flex[] All = [x, y, z];
 
-	internal static readonly char[] NUM_TO_FLEX_CHAR;
-	internal static readonly int NUM_VARS;
+	internal static readonly char[] NumToFlexChar;
+	internal static readonly int NumVars;
 
 	#endregion'
 
@@ -43,8 +49,11 @@ public readonly record struct Flex {
 						 .OrderBy(f => f.Id)
 						 .ToList();
 
-		NUM_TO_FLEX_CHAR = fields.Select(f => f.Symbol).ToArray();
-		NUM_VARS = fields.Count;
+		NumToFlexChar = fields.Select(f => f.Symbol).ToArray();
+		NumVars = fields.Count;
+
+		Debug.Assert(NumVars == All.Length, $"Critical constant mismatch! Flex.All size ({All.Length}) does not match statically defined NumVars ({NumVars})!");
+
 	}
 
 	private Flex(int id, char symbol) { Id = id; Symbol = symbol; }
