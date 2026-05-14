@@ -61,6 +61,16 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 
 	public PolyEx() => termSeries = new MonoSeries();
 
+	public PolyEx(PolyEx other) {
+
+		MonoSeries termSeries = new MonoSeries();
+
+		foreach (MonoEx mono in other.termSeries)
+			termSeries.Add(new MonoEx(mono));
+
+		this.termSeries = termSeries;
+
+	}
 	#endregion
 
 	#region Operators

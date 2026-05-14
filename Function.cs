@@ -21,11 +21,7 @@ public class Function {
 
 		vars = new SortedSet<int>();
 
-		foreach (var mono in poly)
-			for (int i = 0; i < Flex.NUM_VARS; i++)
-				if (mono.DegreeOfVariable(new Flex(i)) != 0)
-					vars.Add(i);
-
+		UpdatePoly(poly);
 
 	}
 
@@ -48,7 +44,7 @@ public class Function {
 			double result = 0;
 
 			// iterate through each term
-			foreach (var mono in poly) {
+			foreach (var mono in poly.AsSpan()) {
 
 				// if 0, skip
 				if (mono.Coefficient == 0)
@@ -70,7 +66,7 @@ public class Function {
 					// input for variable
 					double input = inputs[i];
 					// degree of varbiable
-					double deg = double.CreateChecked(mono.DegreeOfVariable(new Flex(var)));
+					double deg = double.CreateChecked(mono.DegreeOfVariable(Flex.NUM_TO_FLEX[var]));
 
 					evaluatedTerm *= double.CreateChecked(double.Pow(input, deg));
 
@@ -107,11 +103,24 @@ public class Function {
 
 	}
 
+	private void UpdatePoly(PolyEx poly) {
+
+		this.poly = poly;
+
+		vars.Clear();
+
+		foreach (var mono in poly)
+			for (int i = 0; i < Flex.NUM_VARS; i++)
+				if (mono.DegreeOfVariable(Flex.NUM_TO_FLEX[i]) != 0)
+					vars.Add(i);
+
+	}
+
 	public PolyEx Expression {
 
-		get => this.Expression;
+		get => this.poly;
 
-		set => this.Expression = value;
+		set => UpdatePoly(value);
 
 	}
 
@@ -128,7 +137,7 @@ public class Function {
 
 			foreach (int idpVar in vars) {
 
-				ret += Flex.VAR_TO_CHAR[idpVar] + ( ( counter != 1 ) ? ", " : "" );
+				ret += Flex.NUM_TO_FLEX_CHAR[idpVar] + ( ( counter != 1 ) ? ", " : "" );
 				counter--;
 
 			}

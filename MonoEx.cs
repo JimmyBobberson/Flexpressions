@@ -376,7 +376,7 @@ public readonly struct MonoEx : IComparable {
 
 			if (deg != 0)
 				ret += ( !isAllAlone ? "(" : "" ) +
-					Flex.VAR_TO_CHAR[i] + DegreeToString(deg) +
+					Flex.NUM_TO_FLEX_CHAR[i] + DegreeToString(deg) +
 					( !isAllAlone ? ")" : "" );
 
 		}

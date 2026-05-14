@@ -12,6 +12,7 @@ namespace Flexpressions;
 
 // todo: multiply polys
 // todo: multiply polys with monos
+// todo: take monos and polys to power
 
 // todo: equality operators for polys
 // todo: equality operators between polys and monos (using casts?)
@@ -34,25 +35,12 @@ class Program {
 
 
 		Function cutiepie = new Function(( Flex.x ^ 2 ) + Flex.y + 6);
-
-		Function lol = new Function(( Flex.x ^ 2 ) + Flex.z + 6);
-
-		Function each = new Function(Flex.x + Flex.y + Flex.z);
-
-		Function each2 = new Function(Flex.y + Flex.z);
-
-		// todo: display f(x, y, z)
-
 		Console.WriteLine(cutiepie);
 		Console.WriteLine(cutiepie.ExpressOutput(3, 10));
 
-		/*Console.WriteLine(cutiepie[3, -10]);
-		Console.WriteLine(cutiepie[2, 4]);
-		//Console.WriteLine(lol[3, 0, 2]);
-		//Console.WriteLine(lol[3, 1, 2]);
-		Console.WriteLine(lol[3, 1]);
-		Console.WriteLine(each[1, 1, 1]);*/
-
+		cutiepie.Expression = ( Flex.x ^ 2 ) + ( Flex.z ^ 2 ) - 6 * Flex.y - 12;
+		Console.WriteLine(cutiepie);
+		Console.WriteLine(cutiepie.ExpressOutput(3, 5, 7));
 
 	}
 
