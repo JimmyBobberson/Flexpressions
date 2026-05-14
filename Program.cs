@@ -5,10 +5,7 @@ namespace Flexpressions;
 
 // todo: all tostring use StringBuilder for optimization
 
-// todo: monomial evaluation by passing in param NumType[] args
-// todo: implement functions which use some sort of bracket operator to pass in params
-//			takes every independent variable from the polynomial as input somehow ... 
-//			derivatives and integrals'
+// todo: function calculus
 
 // todo: multiply polys
 // todo: multiply polys with monos
@@ -17,17 +14,11 @@ namespace Flexpressions;
 // todo: equality operators for polys
 // todo: equality operators between polys and monos (using casts?)
 
-// todo: MonoEx<NumType>.Zero ? and other common things?
-
-// todo: allow casting between different MonoEx types (e.g. MonoEx<int> to MonoEx<double>)
-
-// todo: allow casting from NumType to MonoEx<NumType> for "chalkboard expressions" with specific syntax like (2 * (x ^ 2 ))
-
-// todo: fix exponent subscripts 
+// todo: MonoEx.Zero ? and other common things?
 
 // todo: implement "complex functions" which can have trig, log, exponent, rational, etc (but do not have derivative)
 
-// todo: make everything mutable
+// todo: mutable behavior
 
 class Program {
 
@@ -38,7 +29,7 @@ class Program {
 		Console.WriteLine(cutiepie);
 		Console.WriteLine(cutiepie.ExpressOutput(3, 10));
 
-		cutiepie.Expression = ( Flex.x ^ 2 ) + ( Flex.z ^ 2 ) - ( 6 * Flex.y ) + 12;
+		cutiepie.Expression = ( Flex.x ^ 2 ) + ( Flex.z ^ 3 ) - ( 6 * Flex.y ) + 12;
 		Console.WriteLine(cutiepie);
 		Console.WriteLine(cutiepie.ExpressOutput(3, 5, 7));
 

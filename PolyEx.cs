@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Flexpressions;
 
@@ -18,7 +19,6 @@ namespace Flexpressions;
 /// 
 /// PolyEx objects are immutable and all operations return a new object.<br/>
 /// </summary>
-/// <typeparam name="NumType"></typeparam>
 /// 
 // todo: ICollection
 // todo: IEquatable
@@ -56,7 +56,10 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 
 	}
 
-	internal PolyEx() => termSeries = new MonoSeries();
+	/// <summary>
+	/// Instantiates the polynomial 0
+	/// </summary>
+	public PolyEx() => termSeries = new MonoSeries();
 
 	internal PolyEx(PolyEx other) {
 
@@ -75,13 +78,6 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 	// All polynomial operators delegate to the below two master functions
 	// (or construct their resultants directly) 
 
-	/// <summary>
-	/// performs mono1 (+/-) mono2 and returns the resulting polynomial expression
-	/// </summary>
-	/// <param name="mono1"></param>
-	/// <param name="mono2"></param>
-	/// <param name="subtract"></param>
-	/// <returns></returns>
 	internal static PolyEx CombineMonomials(MonoEx mono1, MonoEx mono2, bool subtract = false) {
 
 		MonoSeries termSeries = new MonoSeries(2);
@@ -149,11 +145,35 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 
 	}
 
+	/// <summary>
+	/// Convert a monomial into a single-term polynomial
+	/// </summary>
+	/// <param name="mono"></param>
 	public static implicit operator PolyEx(MonoEx mono) => new PolyEx(mono);
+	/// <summary>
+	/// Convert a coefficient into a monomial and then into into a single-term polynomial
+	/// </summary>
+	/// <param name="num"></param>
 	public static implicit operator PolyEx(double num) => new PolyEx(new MonoEx(coefficient: num));
+	/// <summary>
+	/// Convert a variable into a monomial and then into into a single-term polynomial
+	/// </summary>
+	/// <param name="idp"></param>
 	public static implicit operator PolyEx(Flex idp) => new PolyEx(new MonoEx(independent: idp, degree: 1));
 
+	/// <summary>
+	/// Add a monomial to a polynomial
+	/// </summary>
+	/// <param name="poly"></param>
+	/// <param name="mono"></param>
+	/// <returns>Sum of expressions as polynomial</returns>
 	public static PolyEx operator +(PolyEx poly, MonoEx mono) => InsertMonomialInto(poly, mono);
+	/// <summary>
+	/// Adds all monomials from poly2 to poly1
+	/// </summary>
+	/// <param name="poly1"></param>
+	/// <param name="poly2"></param>
+	/// <returns>Sum of expressions as polynomial</returns>
 	public static PolyEx operator +(PolyEx poly1, PolyEx poly2) {
 
 		PolyEx polySum = new PolyEx();
@@ -170,7 +190,19 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 
 	}
 
+	/// <summary>
+	/// Subtracts a monomial from a polynomial
+	/// </summary>
+	/// <param name="poly"></param>
+	/// <param name="mono"></param>
+	/// <returns>Difference of expressions as polynomial</returns>
 	public static PolyEx operator -(PolyEx poly, MonoEx mono) => InsertMonomialInto(poly, mono, true);
+	/// <summary>
+	/// Subtracts all monomials within poly2 from poly1
+	/// </summary>
+	/// <param name="poly1"></param>
+	/// <param name="poly2"></param>
+	/// <returns>Difference of expressions as polynomial</returns>
 	public static PolyEx operator -(PolyEx poly1, PolyEx poly2) {
 
 		PolyEx polySum = new PolyEx();
@@ -187,6 +219,11 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 
 	}
 
+	/// <summary>
+	/// Create the negative version of a polynomial
+	/// </summary>
+	/// <param name="poly"></param>
+	/// <returns>This polynomial with flipped-sign coefficients</returns>
 	public static PolyEx operator -(PolyEx poly) {
 
 		MonoSeries monoSeries = new MonoSeries(poly.Count);
@@ -225,7 +262,7 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 	/// access a monomial of the polynomial expression
 	/// elements are ordered from highest to lowest degree
 	/// </summary>
-	/// <param name="index"></param>
+	/// <param name="idx"></param>
 	/// <returns></returns>
 	public MonoEx this[int idx] {
 
@@ -242,6 +279,10 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 
 	#region IEnumerable
 
+	/// <summary>
+	/// Get monomial enumerator for polynomial
+	/// </summary>
+	/// <returns></returns>
 	public IEnumerator<MonoEx> GetEnumerator() {
 
 		foreach (var mono in termSeries)
@@ -258,12 +299,12 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 
 	#region Stringy
 
-	public override string ToString() {
+	internal StringBuilder ToStringBuilder() {
+
+		StringBuilder sb = new StringBuilder("");
 
 		if (termSeries.Count == 0)
-			return "" + 0;
-
-		string ret = "";
+			return sb.Append(0);
 
 		bool firstNode = true;
 
@@ -272,24 +313,27 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 			if (firstNode) {
 
 				firstNode = false;
-				ret += mono;
+				sb.Append(mono.ToStringBuilder());
 
 			}
 
 			else {
 
 				if (mono.Coefficient < 0)
-					ret += " - " + mono.AbsToString();
+					sb.Append(" - ").Append(mono.AbsToStringBuilder());
 				else
-					ret += " + " + mono.AbsToString();
+					sb.Append(" + ").Append(mono.AbsToStringBuilder());
 
 			}
 
 		}
 
-		return ret;
+		return sb;
 
 	}
+
+	/// <returns>String representation of the polynomial</returns>
+	public override string ToString() => ToStringBuilder().ToString();
 
 	#endregion
 

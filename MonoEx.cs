@@ -27,8 +27,9 @@ public readonly struct MonoEx : IComparable {
 	#region Static Config and Helper Stuff
 
 	// exponent config
-	static private readonly bool EXPONENTS_ARE_SUPERSCRIPTS = true; // curently broken
+	static private readonly bool EXPONENTS_ARE_SUPERSCRIPTS = false;
 
+	// smth in here is broken
 	static private readonly string[] SUPERSCRIPT_FOR_DIGIT = new string[] {
 			"\u2070",
 			"\u00B9",
@@ -84,7 +85,7 @@ public readonly struct MonoEx : IComparable {
 	// not total decimals to display but maxs
 	private const int DECIMAL_PRECISION = 3;
 
-	public static double ForcePrecision(double val) => double.Round(val, DECIMAL_PRECISION, MidpointRounding.AwayFromZero);
+	internal static double ForcePrecision(double val) => double.Round(val, DECIMAL_PRECISION, MidpointRounding.AwayFromZero);
 
 	#endregion
 
@@ -122,7 +123,10 @@ public readonly struct MonoEx : IComparable {
 
 	internal MonoEx(MonoEx other, double newCoefficient) : this(newCoefficient, other.idpDegrees) { }
 
-	internal MonoEx() : this(0) { }
+	/// <summary>
+	/// Instantiates the monomial 0
+	/// </summary>
+	public MonoEx() : this(0) { }
 
 	internal MonoEx Flipped() => new MonoEx(this, -this.coefficient);
 
@@ -187,12 +191,30 @@ public readonly struct MonoEx : IComparable {
 	// see Equality, Ordering, and Hashing for equality operators
 
 	// add monomials to make a polynomial
+	/// <summary>
+	/// Add monomials, which creates a polynomial of either 1 or 2 terms depending on if the monomials were like terms
+	/// </summary>
+	/// <param name="mono1"></param>
+	/// <param name="mono2"></param>
+	/// <returns>Sum of expressions as polynomial</returns>
 	public static PolyEx operator +(MonoEx mono1, MonoEx mono2) => PolyEx.CombineMonomials(mono1, mono2, false);
 
 	// subtract monomials to make a polynomial
+	/// <summary>
+	/// Subtract monomials, which creates a polynomial of either 1 or 2 terms depending on if the monomials were like terms
+	/// </summary>
+	/// <param name="mono1"></param>
+	/// <param name="mono2"></param>
+	/// <returns>Difference of expressions as polynomial</returns>
 	public static PolyEx operator -(MonoEx mono1, MonoEx mono2) => PolyEx.CombineMonomials(mono1, mono2, true);
 
 	// multiply monomials to get a monomial in return 
+	/// <summary>
+	/// Multiply a monomial with another, combining coefficient and variables
+	/// </summary>
+	/// <param name="mono1"></param>
+	/// <param name="mono2"></param>
+	/// <returns>Product of expressions as monomial</returns>
 	public static MonoEx operator *(MonoEx mono1, MonoEx mono2) {
 
 		double coefficientProduct = ForcePrecision(mono1.coefficient * mono2.coefficient);
@@ -210,28 +232,46 @@ public readonly struct MonoEx : IComparable {
 	}
 
 	// multiply monomial by a scalar to get a monomial in return with the same independent variables
+	/// <summary>
+	/// Multiply a monomial with a scalar
+	/// </summary>
+	/// <param name="mono1"></param>
+	/// <param name="scalar"></param>
+	/// <returns>Product of expressions as monomial</returns>
 	public static MonoEx operator *(MonoEx mono1, double scalar) => new MonoEx(ForcePrecision(mono1.Coefficient * scalar), mono1.idpDegrees);
+	/// <summary>
+	/// Multiply a monomial with a scalar
+	/// </summary>
+	/// <param name="mono1"></param>
+	/// <param name="scalar"></param>
+	/// <returns>Product of expressions as monomial</returns>
 	public static MonoEx operator *(double scalar, MonoEx mono1) => new MonoEx(ForcePrecision(mono1.Coefficient * scalar), mono1.idpDegrees);
+	/// <summary>
+	/// Create the negative version of a monomial
+	/// </summary>
+	/// <param name="mono"></param>
+	/// <returns>This monomial with the opposite sign coefficient</returns>
 	public static MonoEx operator -(MonoEx mono) => mono.Flipped();
 
 	// divide monomial by a scalar to get a monomial in return with the same independent variables
+	/// <summary>
+	/// Divide monomial by a scalar
+	/// </summary>
+	/// <param name="mono1"></param>
+	/// <param name="scalar"></param>
+	/// <returns>Quotient of expressions as monomial</returns>
 	public static MonoEx operator /(MonoEx mono1, double scalar) => new MonoEx(ForcePrecision(mono1.Coefficient / scalar), mono1.idpDegrees);
-	public static MonoEx operator /(double scalar, MonoEx mono1) {
 
-		double coef = scalar / mono1.coefficient;
-		int[] idpList = new int[Flex.NUM_VARS];
-
-		// flip all signs cuz thats how this division works
-		for (int i = 0; i < idpList.Length; i++)
-			idpList[i] = -mono1.idpDegrees[i];
-
-		return new MonoEx(coef, idpList);
-
-	}
-
+	/// <summary>
+	/// Convert a lone coefficient into a monomial of that coefficient and no variables
+	/// </summary>
+	/// <param name="num"></param>
 	public static implicit operator MonoEx(double num) => new MonoEx(coefficient: num);
+	/// <summary>
+	/// Convert a lone variable into a monomial of that variable with degree 1 and coefficient 1
+	/// </summary>
+	/// <param name="idp"></param>
 	public static implicit operator MonoEx(Flex idp) => new MonoEx(independent: idp, degree: 1);
-
 
 	#endregion
 
@@ -284,9 +324,13 @@ public readonly struct MonoEx : IComparable {
 
 	}
 
+	/// <param name="mono1"></param>
+	/// <param name="mono2"></param>
+	/// <returns>true if mono1 would come before mono2 in sorted order</returns>
 	public static bool GreaterOrder(MonoEx mono1, MonoEx mono2) => mono1.CompareTo(mono2) < 0;
 
-	// nonstatic delegate for GreaterOrder
+	/// <param name="other"></param>
+	/// <returns>true if this would come before other in sorted order</returns>
 	public bool HasGreaterOrderThan(MonoEx other) => MonoEx.GreaterOrder(this, other);
 
 	#endregion
@@ -294,10 +338,10 @@ public readonly struct MonoEx : IComparable {
 	#region Equality and Hashing
 
 	/// <summary>
-	/// returns true if same vars with same degree (deep check on dict)
+	/// Check if a monomial is a like term with this monomial
 	/// </summary>
-	/// <param name="other"></param>
-	/// <returns></returns>
+	/// <param name="otherMono"></param>
+	/// <returns>true if otherMono has same vars with same degrees</returns>
 	public bool IsLike(MonoEx otherMono) {
 
 		if (otherMono.IndependentVariableCount != this.IndependentVariableCount
@@ -312,6 +356,8 @@ public readonly struct MonoEx : IComparable {
 
 	}
 
+	/// <param name="other"></param>
+	/// <returns>true if other is non-null and MonoEx, and monomials have the same variables, degrees, and coefficient</returns>
 	public override bool Equals(object? other) {
 
 		if (other == null || other.GetType() != this.GetType())
@@ -330,8 +376,7 @@ public readonly struct MonoEx : IComparable {
 	// ==  uses IsLike and compares coefficients, so hash must as well
 	/// <inheritdoc cref="GetHashCode"/>
 	/// <summary>
-	/// Generates hash based on coefficient, all variables, and their degrees. 
-	/// Hash matches if the terms divided by each other would equal one. 
+	/// Generates hash based on coefficient, all variables, and their degrees
 	/// </summary>
 	public override int GetHashCode() {
 
@@ -355,15 +400,30 @@ public readonly struct MonoEx : IComparable {
 	// if the independent variable references are equal, the objects are equal
 	// finally, if all else fails, we have to check to see if mono1 and mono2 have the same independent variables and coefficients (slow).
 	//		if so, they are equal
+	/// <param name="mono1"></param>
+	/// <param name="mono2"></param>
+	/// <returns>true if both monomials have the same variables, degrees, and coefficient</returns>
 	public static bool operator ==(MonoEx mono1, MonoEx mono2) => ReferenceEquals(mono1.idpDegrees, mono2.idpDegrees)
 																						|| ( mono1.IsLike(mono2)
 																						&& ForcePrecision(mono1.Coefficient) == ForcePrecision(mono2.Coefficient) );
+
+
+	/// <param name="mono1"></param>
+	/// <param name="mono2"></param>
+	/// <returns></returns>
+	/// <returns>false if both monomials have the same variables, degrees, and coefficient</returns>
 	public static bool operator !=(MonoEx mono1, MonoEx mono2) => !( mono1 == mono2 );
 
-	// a monomial is equal to a scalar if it has no independent variables and its coefficient is equal to the scalar
-	public static bool operator ==(MonoEx mono1, double num) => ( mono1.idpDegrees == null || mono1.idpDegrees.Length == 0 )
-																			&& ForcePrecision(mono1.Coefficient) == ForcePrecision(num);
-	public static bool operator !=(MonoEx mono1, double num) => !( mono1 == num );
+	/// <param name="mono"></param>
+	/// <param name="num"></param>
+	/// <returns>true if the monomial has no variables and a coefficient equal to num (both values are rounded)</returns>
+	public static bool operator ==(MonoEx mono, double num) => ( mono.idpDegrees == null || mono.idpDegrees.Length == 0 )
+																			&& ForcePrecision(mono.Coefficient) == ForcePrecision(num);
+
+	/// <param name="mono"></param>
+	/// <param name="num"></param>
+	/// <returns>false if the monomial has no variables and a coefficient equal to num (both values are rounded)</returns>
+	public static bool operator !=(MonoEx mono, double num) => !( mono == num );
 
 	#endregion
 
@@ -371,16 +431,18 @@ public readonly struct MonoEx : IComparable {
 
 	#region Stringy 
 
-	public string AbsToString() {
+	internal StringBuilder AbsToStringBuilder() {
+
+		StringBuilder sb = new StringBuilder();
 
 		// if coef is 0, whole thing is 0
 		if (coefficient == 0)
-			return "0";
+			return sb.Append(0);
 
 		double absCoef = double.Abs(coefficient);
 
 		// if the coefficient is one, it will be left out 
-		string ret = ( absCoef == 1 ) ? "" : absCoef.ToString();
+		sb.Append(( absCoef == 1 ) ? "" : absCoef.ToString());
 
 		bool isAllAlone = ( this.IndependentVariableCount == 1 ); // solo variable has no ()
 
@@ -390,17 +452,27 @@ public readonly struct MonoEx : IComparable {
 			int deg = idpDegrees[i];
 
 			if (deg != 0)
-				ret += ( !isAllAlone ? "(" : "" ) +
-					Flex.NUM_TO_FLEX_CHAR[i] + DegreeToString(deg) +
-					( !isAllAlone ? ")" : "" );
+				sb.Append(!isAllAlone ? "(" : "")
+					.Append(Flex.NUM_TO_FLEX_CHAR[i])
+					.Append(DegreeToString(deg))
+					.Append(( !isAllAlone ? ")" : "" ));
 
 		}
 
-		return ret;
+		return sb;
 
 	}
 
-	override public string ToString() => coefficient < 0 ? "-" + AbsToString() : AbsToString();
+	/// <summary>
+	/// Use ToString for signed version
+	/// </summary>
+	/// <returns>Unsigned monomial as string</returns>
+	public string AbsToString() => AbsToStringBuilder().ToString();
+
+	internal StringBuilder ToStringBuilder() => new StringBuilder(coefficient < 0 ? "-" : "").Append(AbsToString());
+
+	/// <returns>String representation of this monomial</returns>
+	override public string ToString() => ToStringBuilder().ToString();
 
 	#endregion
 

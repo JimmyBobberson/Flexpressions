@@ -1,9 +1,13 @@
 ﻿using System.Collections.Immutable;
 using System.Linq.Expressions;
 using System.Numerics;
+using System.Text;
 
 namespace Flexpressions;
 
+/// <summary>
+/// Functions allow the evaluation of polynomials at specific points
+/// </summary>
 public class Function {
 
 	#region Static Helper thingies
@@ -23,6 +27,11 @@ public class Function {
 	// Used to optimize repeated ToString calls which are expensive here
 	string? cachedFunctionString; // todo: use memoization/caching in other classes
 
+	/// <summary>
+	/// Construct a function using a polynomial and a defined name
+	/// </summary>
+	/// <param name="poly"></param>
+	/// <param name="functionName"></param>
 	public Function(PolyEx poly, string functionName) {
 
 		this.poly = poly;
@@ -35,16 +44,36 @@ public class Function {
 
 	}
 
+	/// <summary>
+	/// Construct a function <i>f</i> using a polynomial
+	/// </summary>
+	/// <param name="poly"></param>
 	public Function(PolyEx poly) : this(poly: poly, functionName: DEFAULT_NAME) { }
 
+	/// <summary>
+	/// Construct a function using a monomial (single-term polynomial) and a defined name
+	/// </summary>
+	/// <param name="mono"></param>
+	/// <param name="functionName"></param>
 	public Function(MonoEx mono, string functionName) : this(poly: mono, functionName: functionName) { }
 
+	/// <summary>
+	/// Construct a function <i>f</i> using a monomial (single-term polynomial)
+	/// </summary>
+	/// <param name="mono"></param>
 	public Function(MonoEx mono) : this(poly: mono, functionName: DEFAULT_NAME) { }
 
 	#endregion
 
 	#region Evaluation
 
+	/// <summary>
+	/// Evaluate this function at a point.<br/>
+	/// For example, if your function is dependent on x and y, this[1, 2] will evaluate the function at the point where x = 1 and y = 2 <br/>
+	/// <i>Inputs must be ordered as follows: [x, y, z]. Omit variables not present in this function. </i>
+	/// </summary>
+	/// <param name="inputs"></param>
+	/// <returns>string representation of the function value at a point as an equation</returns>
 	public double this[params double[] inputs] {
 
 		get {
@@ -99,26 +128,26 @@ public class Function {
 	}
 
 	/// <summary>
-	/// Evaluate the function and print the result as an equality <br/>(e.g., "f(2) = 4")
+	/// Evaluate the function and produce the result as an equation <br/>(e.g., "f(2) = 4")
 	/// </summary>
 	/// <param name="inputs"></param>
-	/// <returns></returns>
+	/// <returns>string representation of the function value at a point as an equation</returns>
 	public string ExpressOutput(params double[] inputs) {
 
-		string ret = functionName + "(";
+		StringBuilder sb = new StringBuilder(functionName).Append("(");
 
 		int counter = vars.Count;
 
 		foreach (double input in inputs) {
 
-			ret += input + ( ( counter != 1 ) ? ", " : "" );
+			sb.Append(input).Append(( ( counter != 1 ) ? ", " : "" ));
 			counter--;
 
 		}
 
-		ret += ") = " + this[inputs];
+		sb.Append(") = ").Append(this[inputs]);
 
-		return ret;
+		return sb.ToString();
 
 	}
 
@@ -126,6 +155,9 @@ public class Function {
 
 	#region Accessors
 
+	/// <summary>
+	/// Read or modify to the polynomial this function is associated with
+	/// </summary>
 	public PolyEx Expression {
 
 		get => this.poly;
@@ -134,6 +166,17 @@ public class Function {
 
 	}
 
+	/// <summary>
+	/// Read the number of independent variables in this function
+	/// </summary>
+	public int NumVariables => vars.Count();
+
+	/// <summary>
+	/// Check if the function is dependent on a certain independent variable
+	/// </summary>
+	/// <param name="variable"></param>
+	/// <returns>true if variable is within this function's polynomial</returns>
+	public bool ContainsVariable(Flex variable) => vars.Contains(variable.Id);
 
 	#endregion
 
@@ -158,7 +201,8 @@ public class Function {
 
 	#region Stringy wingy
 
-	public override string ToString() => this.Signature + " = " + poly;
+	/// <returns>string representation of this function as an equality with its polynomial</returns>
+	public override string ToString() => new StringBuilder(this.Signature).Append(" = ").Append(poly.ToStringBuilder()).ToString();
 
 	/// <summary>
 	/// Return the function and its args represented as a string without the polynomial <br/>
@@ -173,20 +217,20 @@ public class Function {
 			if (cachedFunctionString != null)
 				return cachedFunctionString;
 
-			string ret = functionName + "(";
+			StringBuilder sb = new StringBuilder(functionName).Append("(");
 
 			int counter = vars.Count;
 
 			foreach (int idpVar in vars) {
 
-				ret += Flex.NUM_TO_FLEX_CHAR[idpVar] + ( ( counter != 1 ) ? ", " : "" );
+				sb.Append(Flex.NUM_TO_FLEX_CHAR[idpVar]).Append(( ( counter != 1 ) ? ", " : "" ));
 				counter--;
 
 			}
 
-			ret += ")";
+			sb.Append(")");
 
-			cachedFunctionString = ret;
+			cachedFunctionString = sb.ToString();
 
 			return cachedFunctionString;
 
