@@ -18,7 +18,7 @@ public readonly record struct Flex<NumType> where NumType : INumber<NumType> {
 	internal const int NUM_VARS = 3;
 
 	internal static readonly char[] VAR_TO_CHAR = new char[] { 'x', 'y', 'z' };
-	internal static readonly Flex<NumType>[] ID_TO_VAR = new Flex<NumType>[] { new(0), new(1), new(2) };
+	internal static readonly Flex<NumType>[] NUM_TO_FLEX = new Flex<NumType>[] { new(0), new(1), new(2) };
 
 	// Private constructor prevents external code from doing 'new FlexVar(5)'
 	internal Flex(int id) => Id = id;

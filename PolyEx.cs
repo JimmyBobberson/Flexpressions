@@ -135,7 +135,7 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 			monoSeries.RemoveAt((int)idxToRemove);
 		// toInsert is not a like term of any element in the polynomial so we will insert it normally
 		else if (!foundLikeTerm)
-			monoSeries.Add(toInsert);
+			monoSeries.Add(subtract ? toInsert.Flipped() : toInsert);
 
 		return new PolyEx<NumType>(monoSeries);
 

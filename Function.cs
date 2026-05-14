@@ -9,22 +9,18 @@ public class Function<NumType> where NumType : INumber<NumType> {
 	private const string DEFAULT_NAME = "f";
 
 	private PolyEx<NumType> poly;
-	private ImmutableSortedSet<int> vars;
+	private SortedSet<int> vars;
 	string functionName;
 	string? cachedFunctionString; // todo: use memoization/caching in other classes
 
 	public Function(PolyEx<NumType> poly, string functionName) {
 
-		this.poly = poly;
 		cachedFunctionString = null;
 		this.functionName = functionName;
 
-		vars = ImmutableSortedSet<int>.Empty;
+		vars = new SortedSet<int>();
 
-		foreach (var mono in poly)
-			for (int i = 0; i < Flex<NumType>.NUM_VARS; i++)
-				if (mono.DegreeOfVariable(new Flex<NumType>(i)) != NumType.Zero)
-					vars = vars.Add(i);
+		UpdatePoly(poly);
 
 
 	}
@@ -105,11 +101,26 @@ public class Function<NumType> where NumType : INumber<NumType> {
 
 	}
 
+	private void UpdatePoly(PolyEx<NumType> poly) {
+
+		this.poly = poly;
+
+		cachedFunctionString = null;
+
+		vars.Clear();
+
+		foreach (var mono in poly)
+			for (int i = 0; i < Flex<NumType>.NUM_VARS; i++)
+				if (mono.DegreeOfVariable(Flex<NumType>.NUM_TO_FLEX[i]) != NumType.Zero)
+					vars.Add(i);
+
+	}
+
 	public PolyEx<NumType> Expression {
 
-		get => this.Expression;
+		get => this.poly;
 
-		set => this.Expression = value;
+		set => UpdatePoly(value);
 
 	}
 
