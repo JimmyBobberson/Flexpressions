@@ -2,7 +2,7 @@ using System.Numerics;
 
 namespace Flexpressions;
 
-public readonly record struct Flex<NumType> where NumType : INumber<NumType> {
+public readonly record struct Flex {
 
 	// the worst thing ive ever had to write
 	// rules for self:
@@ -18,14 +18,14 @@ public readonly record struct Flex<NumType> where NumType : INumber<NumType> {
 	internal const int NUM_VARS = 3;
 
 	internal static readonly char[] VAR_TO_CHAR = new char[] { 'x', 'y', 'z' };
-	internal static readonly Flex<NumType>[] ID_TO_VAR = new Flex<NumType>[] { new(0), new(1), new(2) };
+	internal static readonly Flex[] ID_TO_VAR = new Flex[] { new(0), new(1), new(2) };
 
 	// Private constructor prevents external code from doing 'new FlexVar(5)'
 	internal Flex(int id) => Id = id;
 
-	public static readonly Flex<NumType> x = new(0);
-	public static readonly Flex<NumType> y = new(1);
-	public static readonly Flex<NumType> z = new(2);
+	public static readonly Flex x = new(0);
+	public static readonly Flex y = new(1);
+	public static readonly Flex z = new(2);
 	/*public static readonly Flex<NumType> a = new(3);
 	public static readonly Flex<NumType> b = new(4);
 	public static readonly Flex<NumType> c = new(5);*/
@@ -44,10 +44,10 @@ public readonly record struct Flex<NumType> where NumType : INumber<NumType> {
 
 	#region Operators
 
-	public static MonoEx<NumType> operator ^(Flex<NumType> flex, NumType deg) => new MonoEx<NumType>(flex, deg);
-	public static PolyEx<NumType> operator +(Flex<NumType> flex1, Flex<NumType> flex2) {
+	public static MonoEx operator ^(Flex flex, int deg) => new MonoEx(flex, deg);
+	public static PolyEx operator +(Flex flex1, Flex flex2) {
 
-		PolyEx<NumType> ret = new MonoEx<NumType>(flex1) + new MonoEx<NumType>(flex2);
+		PolyEx ret = new MonoEx(flex1) + new MonoEx(flex2);
 
 		return ret;
 
@@ -90,7 +90,7 @@ public readonly record struct Flex
 	private Flex(int id, char symbol) { Id = id; Symbol = symbol; }
 
 	// 3. The "Cute" Operators (Now using double/float)
-	public static MonoEx operator ^(Flex f, double deg) => new MonoEx(f, (float)deg);
+	public static MonoEx operator ^(Flex f, int deg) => new MonoEx(f, (float)deg);
 	
 	public static PolyEx operator +(Flex f1, Flex f2) => 
 		new PolyEx(new MonoEx(f1), new MonoEx(f2));

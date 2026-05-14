@@ -22,7 +22,10 @@ namespace Flexpressions;
 /// PolyEx objects are immutable and all operations return a new object.<br/>
 /// </summary>
 /// <typeparam name="NumType"></typeparam>
-public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumType : INumber<NumType> {
+/// 
+// todo: ICollection
+// todo: IEquatable
+public readonly struct PolyEx : IEnumerable<MonoEx> {
 
 	#region Static Helpers
 
@@ -34,7 +37,7 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 	#region State and Constructors
 
 	// pseudoalias wrapper
-	private class MonoSeries : List<MonoEx<NumType>> {
+	private class MonoSeries : List<MonoEx> {
 
 		public MonoSeries() : base() { }
 		public MonoSeries(MonoSeries other) : base(other) { }
@@ -46,7 +49,7 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 
 	private PolyEx(MonoSeries termSeries) => this.termSeries = termSeries;
 
-	private PolyEx(MonoEx<NumType> term) {
+	private PolyEx(MonoEx term) {
 
 		MonoSeries termSeries = new MonoSeries();
 
@@ -63,9 +66,9 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 	#region Operators
 
 	// mono to poly
-	public static implicit operator PolyEx<NumType>(MonoEx<NumType> mono) => new PolyEx<NumType>(mono);
-	public static implicit operator PolyEx<NumType>(NumType num) => new PolyEx<NumType>(new MonoEx<NumType>(coefficient: num));
-	public static implicit operator PolyEx<NumType>(Flex<NumType> idp) => new PolyEx<NumType>(new MonoEx<NumType>(independent: idp, degree: NumType.One));
+	public static implicit operator PolyEx(MonoEx mono) => new PolyEx(mono);
+	public static implicit operator PolyEx(double num) => new PolyEx(new MonoEx(coefficient: num));
+	public static implicit operator PolyEx(Flex idp) => new PolyEx(new MonoEx(independent: idp, degree: 1));
 
 	/// <summary>
 	/// performs mono1 (+/-) mono2 and returns the resulting polynomial expression
@@ -74,7 +77,7 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 	/// <param name="mono2"></param>
 	/// <param name="subtract"></param>
 	/// <returns></returns>
-	public static PolyEx<NumType> CombineMonomials(MonoEx<NumType> mono1, MonoEx<NumType> mono2, bool subtract = false) {
+	public static PolyEx CombineMonomials(MonoEx mono1, MonoEx mono2, bool subtract = false) {
 
 		MonoSeries termSeries = new MonoSeries(2);
 
@@ -83,25 +86,25 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 		if (mono1.IsLike(mono2)) {
 
 			// add first to second
-			NumType coefficientSum = mono1.Coefficient + ( mono2.Coefficient * ( subtract ? NumType.CreateChecked(-1) : NumType.One ) );
+			double coefficientSum = mono1.Coefficient + ( mono2.Coefficient * ( subtract ? -1 : 1 ) );
 
-			termSeries.Add(new MonoEx<NumType>(mono1, coefficientSum));
+			termSeries.Add(new MonoEx(mono1, coefficientSum));
 
 		}
 		else {
 
-			mono2 = subtract ? new MonoEx<NumType>(mono2, mono2.Coefficient * NumType.CreateChecked(-1)) : mono2;
+			mono2 = subtract ? new MonoEx(mono2, mono2.Coefficient * -1) : mono2;
 
 			termSeries.Add(mono1);
 			termSeries.Add(mono2);
 
 		}
 
-		return new PolyEx<NumType>(termSeries);
+		return new PolyEx(termSeries);
 
 	}
 
-	private static PolyEx<NumType> InsertMonomialInto(PolyEx<NumType> poly, MonoEx<NumType> toInsert, bool subtract = false) {
+	private static PolyEx InsertMonomialInto(PolyEx poly, MonoEx toInsert, bool subtract = false) {
 
 		// create series to be used for new PolyEx as a copy of poly's series
 		MonoSeries monoSeries = new(poly.Count + 1);
@@ -119,12 +122,12 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 
 				foundLikeTerm = true;
 
-				NumType coefficientSum = mono.Coefficient + ( toInsert.Coefficient * ( subtract ? NumType.CreateChecked(-1) : NumType.One ) );
+				double coefficientSum = mono.Coefficient + ( toInsert.Coefficient * ( subtract ? -1 : 1 ) );
 
-				if (coefficientSum == NumType.Zero)
+				if (coefficientSum == 0)
 					idxToRemove = i;
 				else
-					monoSeries[i] = new MonoEx<NumType>(toInsert, coefficientSum);
+					monoSeries[i] = new MonoEx(toInsert, coefficientSum);
 
 				break;
 
@@ -137,14 +140,14 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 		else if (!foundLikeTerm)
 			monoSeries.Add(toInsert);
 
-		return new PolyEx<NumType>(monoSeries);
+		return new PolyEx(monoSeries);
 
 	}
 
-	public static PolyEx<NumType> operator +(PolyEx<NumType> poly, MonoEx<NumType> mono) => InsertMonomialInto(poly, mono);
-	public static PolyEx<NumType> operator +(PolyEx<NumType> poly1, PolyEx<NumType> poly2) {
+	public static PolyEx operator +(PolyEx poly, MonoEx mono) => InsertMonomialInto(poly, mono);
+	public static PolyEx operator +(PolyEx poly1, PolyEx poly2) {
 
-		PolyEx<NumType> polySum = new PolyEx<NumType>();
+		PolyEx polySum = new PolyEx();
 
 		// make a copy of poly1 
 		foreach (var mono in poly1.AsSpan())
@@ -158,10 +161,10 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 
 	}
 
-	public static PolyEx<NumType> operator -(PolyEx<NumType> poly, MonoEx<NumType> mono) => InsertMonomialInto(poly, mono, true);
-	public static PolyEx<NumType> operator -(PolyEx<NumType> poly1, PolyEx<NumType> poly2) {
+	public static PolyEx operator -(PolyEx poly, MonoEx mono) => InsertMonomialInto(poly, mono, true);
+	public static PolyEx operator -(PolyEx poly1, PolyEx poly2) {
 
-		PolyEx<NumType> polySum = new PolyEx<NumType>();
+		PolyEx polySum = new PolyEx();
 
 		// make a copy of poly1 
 		foreach (var mono in poly1.AsSpan())
@@ -175,14 +178,14 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 
 	}
 
-	public static PolyEx<NumType> operator -(PolyEx<NumType> poly) {
+	public static PolyEx operator -(PolyEx poly) {
 
 		MonoSeries monoSeries = new MonoSeries(poly.Count);
 
 		foreach (var mono in poly.AsSpan())
 			monoSeries.Add(-mono);
 
-		return new PolyEx<NumType>(monoSeries);
+		return new PolyEx(monoSeries);
 
 	}
 
@@ -192,7 +195,7 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 	/// </summary>
 	/// <param name="index"></param>
 	/// <returns></returns>
-	public MonoEx<NumType> this[int idx] {
+	public MonoEx this[int idx] {
 
 		get {
 
@@ -217,7 +220,7 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 	/// <summary>
 	/// return the ordered List of monomials in this polynomial expression (creates a new List)
 	/// </summary>
-	public List<MonoEx<NumType>> MonomialList => new List<MonoEx<NumType>>(termSeries).ToList();
+	public List<MonoEx> MonomialList => new List<MonoEx>(termSeries).ToList();
 
 	/// <summary>
 	/// returns the highest degree monomial in the polynomial expression.
@@ -226,9 +229,9 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 	//public NumType Degree => termSeries is not null && termSeries.Count > 0 ? termSeries.Min.Degree : NumType.Zero;
 
 	// allows memory to be read directly 
-	internal ReadOnlySpan<MonoEx<NumType>> AsSpan() => CollectionsMarshal.AsSpan(termSeries);
+	internal ReadOnlySpan<MonoEx> AsSpan() => CollectionsMarshal.AsSpan(termSeries);
 
-	public IEnumerator<MonoEx<NumType>> GetEnumerator() {
+	public IEnumerator<MonoEx> GetEnumerator() {
 
 		foreach (var mono in termSeries)
 			yield return mono;
@@ -243,7 +246,7 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 	public override string ToString() {
 
 		if (termSeries.Count == 0)
-			return "" + NumType.Zero;
+			return "" + 0;
 
 		string ret = "";
 
@@ -260,7 +263,7 @@ public readonly struct PolyEx<NumType> : IEnumerable<MonoEx<NumType>> where NumT
 
 			else {
 
-				if (mono.Coefficient < NumType.Zero)
+				if (mono.Coefficient < 0)
 					ret += " - " + mono.AbsToString();
 				else
 					ret += " + " + mono.AbsToString();

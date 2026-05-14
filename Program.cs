@@ -33,16 +33,13 @@ class Program {
 	static void Main(string[] args) {
 
 
-		Function<int> cutiepie = new Function<int>(( Flex<int>.x ^ 2 ) + Flex<int>.y + 6);
+		Function cutiepie = new Function(( Flex.x ^ 2 ) + Flex.y + 6);
 
-		Function<int> lol = new Function<int>
-			(( Flex<int>.x ^ 2 ) + Flex<int>.z + 6);
+		Function lol = new Function(( Flex.x ^ 2 ) + Flex.z + 6);
 
-		Function<decimal> each = new Function<decimal>
-			(Flex<decimal>.x + Flex<decimal>.y + Flex<decimal>.z);
+		Function each = new Function(Flex.x + Flex.y + Flex.z);
 
-		Function<decimal> each2 = new Function<decimal>
-			(Flex<decimal>.y + Flex<decimal>.z);
+		Function each2 = new Function(Flex.y + Flex.z);
 
 		// todo: display f(x, y, z)
 
