@@ -12,9 +12,6 @@ namespace Flexpressions;
 /// and those can be combined into bigger polynomial expressions. 
 /// The monomials are ordered by degree.<br/>
 /// 
-/// A PolyEx can use any type that implements INumber (int, float, double, etc)
-/// and all MonoEx objects within it will use the same type. <br/>
-/// 
 /// Polynomial expressions can be used in functions.<br/>
 /// 
 /// Supports indexed accessing for terms. <br/>
@@ -25,7 +22,6 @@ namespace Flexpressions;
 /// 
 // todo: ICollection
 // todo: IEquatable
-//
 public readonly struct PolyEx : IEnumerable<MonoEx> {
 
 	#region Static Helpers
@@ -50,7 +46,7 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 
 	private PolyEx(MonoSeries termSeries) => this.termSeries = termSeries;
 
-	private PolyEx(MonoEx term) {
+	internal PolyEx(MonoEx term) {
 
 		MonoSeries termSeries = new MonoSeries();
 
@@ -60,9 +56,9 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 
 	}
 
-	public PolyEx() => termSeries = new MonoSeries();
+	internal PolyEx() => termSeries = new MonoSeries();
 
-	public PolyEx(PolyEx other) {
+	internal PolyEx(PolyEx other) {
 
 		MonoSeries termSeries = new MonoSeries();
 
@@ -74,12 +70,10 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 	}
 	#endregion
 
-	#region Operators
+	#region Operators (Public Interface for Construction)
 
-	// mono to poly
-	public static implicit operator PolyEx(MonoEx mono) => new PolyEx(mono);
-	public static implicit operator PolyEx(double num) => new PolyEx(new MonoEx(coefficient: num));
-	public static implicit operator PolyEx(Flex idp) => new PolyEx(new MonoEx(independent: idp, degree: 1));
+	// All polynomial operators delegate to the below two master functions
+	// (or construct their resultants directly) 
 
 	/// <summary>
 	/// performs mono1 (+/-) mono2 and returns the resulting polynomial expression
@@ -88,7 +82,7 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 	/// <param name="mono2"></param>
 	/// <param name="subtract"></param>
 	/// <returns></returns>
-	public static PolyEx CombineMonomials(MonoEx mono1, MonoEx mono2, bool subtract = false) {
+	internal static PolyEx CombineMonomials(MonoEx mono1, MonoEx mono2, bool subtract = false) {
 
 		MonoSeries termSeries = new MonoSeries(2);
 
@@ -155,6 +149,10 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 
 	}
 
+	public static implicit operator PolyEx(MonoEx mono) => new PolyEx(mono);
+	public static implicit operator PolyEx(double num) => new PolyEx(new MonoEx(coefficient: num));
+	public static implicit operator PolyEx(Flex idp) => new PolyEx(new MonoEx(independent: idp, degree: 1));
+
 	public static PolyEx operator +(PolyEx poly, MonoEx mono) => InsertMonomialInto(poly, mono);
 	public static PolyEx operator +(PolyEx poly1, PolyEx poly2) {
 
@@ -200,25 +198,6 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 
 	}
 
-	/// <summary>
-	/// access an monomial of the polynomial expression
-	/// elements are ordered from highest to lowest degree
-	/// </summary>
-	/// <param name="index"></param>
-	/// <returns></returns>
-	public MonoEx this[int idx] {
-
-		get {
-
-			if (idx >= 0 && idx < termSeries.Count)
-				return termSeries[idx];
-
-			throw new IndexOutOfRangeException("Attempted to access out-of-range monomial within polynomial");
-
-		}
-
-	}
-
 	#endregion
 
 	#region Accessors
@@ -239,8 +218,29 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 	/// </summary>
 	//public NumType Degree => termSeries is not null && termSeries.Count > 0 ? termSeries.Min.Degree : NumType.Zero;
 
-	// allows memory to be read directly 
+	// allows monos to be read directly without copying
 	internal ReadOnlySpan<MonoEx> AsSpan() => CollectionsMarshal.AsSpan(termSeries);
+
+	/// <summary>
+	/// access a monomial of the polynomial expression
+	/// elements are ordered from highest to lowest degree
+	/// </summary>
+	/// <param name="index"></param>
+	/// <returns></returns>
+	public MonoEx this[int idx] {
+
+		get {
+
+			if (idx >= 0 && idx < termSeries.Count)
+				return termSeries[idx];
+
+			throw new IndexOutOfRangeException("Attempted to access out-of-range monomial within polynomial");
+
+		}
+
+	}
+
+	#region IEnumerable
 
 	public IEnumerator<MonoEx> GetEnumerator() {
 
@@ -253,6 +253,10 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 	System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
 
 	#endregion
+
+	#endregion
+
+	#region Stringy
 
 	public override string ToString() {
 
@@ -286,6 +290,8 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 		return ret;
 
 	}
+
+	#endregion
 
 }
 

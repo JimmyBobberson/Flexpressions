@@ -27,7 +27,7 @@ public readonly struct MonoEx : IComparable {
 	#region Static Config and Helper Stuff
 
 	// exponent config
-	static private readonly bool EXPONENTS_ARE_SUPERSCRIPTS = false; // curently broken
+	static private readonly bool EXPONENTS_ARE_SUPERSCRIPTS = true; // curently broken
 
 	static private readonly string[] SUPERSCRIPT_FOR_DIGIT = new string[] {
 			"\u2070",
@@ -97,7 +97,7 @@ public readonly struct MonoEx : IComparable {
 	// coefficient of monomial
 	private readonly double coefficient;
 
-	private MonoEx(double coefficient, int[] idpDegrees) {
+	internal MonoEx(double coefficient, int[] idpDegrees) {
 
 		this.coefficient = ForcePrecision(coefficient);
 
@@ -107,24 +107,24 @@ public readonly struct MonoEx : IComparable {
 
 	}
 
-	public MonoEx(double coefficient) {
+	internal MonoEx(double coefficient) {
 
 		this.coefficient = ForcePrecision(coefficient);
 		idpDegrees = new int[Flex.NUM_VARS];
 
 	}
 
-	public MonoEx(double coefficient, Flex independent, int degree) : this(coefficient) => idpDegrees[independent.Id] = degree;
+	internal MonoEx(double coefficient, Flex independent, int degree) : this(coefficient) => idpDegrees[independent.Id] = degree;
 
-	public MonoEx(Flex independent, int degree) : this(1, independent, degree) { }
+	internal MonoEx(Flex independent, int degree) : this(1, independent, degree) { }
 
-	public MonoEx(MonoEx other) : this(other.coefficient, other.idpDegrees) { }
+	internal MonoEx(MonoEx other) : this(other.coefficient, other.idpDegrees) { }
 
-	public MonoEx(MonoEx other, double newCoefficient) : this(newCoefficient, other.idpDegrees) { }
+	internal MonoEx(MonoEx other, double newCoefficient) : this(newCoefficient, other.idpDegrees) { }
 
-	public MonoEx() : this(0) { }
+	internal MonoEx() : this(0) { }
 
-	public MonoEx Flipped() => new MonoEx(this, -this.coefficient);
+	internal MonoEx Flipped() => new MonoEx(this, -this.coefficient);
 
 	#endregion
 
@@ -182,7 +182,9 @@ public readonly struct MonoEx : IComparable {
 
 	#endregion
 
-	#region Operators ( + Public Interface for Construction)
+	#region Operators (Public Interface for Construction)
+
+	// see Equality, Ordering, and Hashing for equality operators
 
 	// add monomials to make a polynomial
 	public static PolyEx operator +(MonoEx mono1, MonoEx mono2) => PolyEx.CombineMonomials(mono1, mono2, false);
@@ -230,14 +232,12 @@ public readonly struct MonoEx : IComparable {
 	public static implicit operator MonoEx(double num) => new MonoEx(coefficient: num);
 	public static implicit operator MonoEx(Flex idp) => new MonoEx(independent: idp, degree: 1);
 
+
 	#endregion
 
 	#region Equality, Ordering, and Hashing
 
-	public static bool GreaterOrder(MonoEx mono1, MonoEx mono2) => mono1.CompareTo(mono2) < 0;
-
-	// nonstatic delegate for GreaterOrder
-	public bool HasGreaterOrderThan(MonoEx other) => MonoEx.GreaterOrder(this, other);
+	#region Comparison 
 
 	/// <summary>
 	/// if the monomials are like terms, order them by coefficient <br/>
@@ -284,6 +284,15 @@ public readonly struct MonoEx : IComparable {
 
 	}
 
+	public static bool GreaterOrder(MonoEx mono1, MonoEx mono2) => mono1.CompareTo(mono2) < 0;
+
+	// nonstatic delegate for GreaterOrder
+	public bool HasGreaterOrderThan(MonoEx other) => MonoEx.GreaterOrder(this, other);
+
+	#endregion
+
+	#region Equality and Hashing
+
 	/// <summary>
 	/// returns true if same vars with same degree (deep check on dict)
 	/// </summary>
@@ -316,22 +325,6 @@ public readonly struct MonoEx : IComparable {
 
 	}
 
-	// if the two objects have the same reference, they are equal
-	// if either object is null and the references are not equal, the objects are not equal
-	//		(null check for safety on next check, and uses "is null" to prevent loop)
-	// if the independent variable references are equal, the objects are equal
-	// finally, if all else fails, we have to check to see if mono1 and mono2 have the same independent variables and coefficients (slow).
-	//		if so, they are equal
-	public static bool operator ==(MonoEx mono1, MonoEx mono2) => ReferenceEquals(mono1.idpDegrees, mono2.idpDegrees)
-																						|| ( mono1.IsLike(mono2)
-																						&& ForcePrecision(mono1.Coefficient) == ForcePrecision(mono2.Coefficient) );
-	public static bool operator !=(MonoEx mono1, MonoEx mono2) => !( mono1 == mono2 );
-
-	// a monomial is equal to a scalar if it has no independent variables and its coefficient is equal to the scalar
-	public static bool operator ==(MonoEx mono1, double num) => ( mono1.idpDegrees == null || mono1.idpDegrees.Length == 0 )
-																			&& ForcePrecision(mono1.Coefficient) == ForcePrecision(num);
-	public static bool operator !=(MonoEx mono1, double num) => !( mono1 == num );
-
 	// this has to match the logic in .equals()
 	// .equals() delegates to ==
 	// ==  uses IsLike and compares coefficients, so hash must as well
@@ -351,6 +344,28 @@ public readonly struct MonoEx : IComparable {
 		return hash.ToHashCode();
 
 	}
+
+	#endregion
+
+	#region Operators
+
+	// if the two objects have the same reference, they are equal
+	// if either object is null and the references are not equal, the objects are not equal
+	//		(null check for safety on next check, and uses "is null" to prevent loop)
+	// if the independent variable references are equal, the objects are equal
+	// finally, if all else fails, we have to check to see if mono1 and mono2 have the same independent variables and coefficients (slow).
+	//		if so, they are equal
+	public static bool operator ==(MonoEx mono1, MonoEx mono2) => ReferenceEquals(mono1.idpDegrees, mono2.idpDegrees)
+																						|| ( mono1.IsLike(mono2)
+																						&& ForcePrecision(mono1.Coefficient) == ForcePrecision(mono2.Coefficient) );
+	public static bool operator !=(MonoEx mono1, MonoEx mono2) => !( mono1 == mono2 );
+
+	// a monomial is equal to a scalar if it has no independent variables and its coefficient is equal to the scalar
+	public static bool operator ==(MonoEx mono1, double num) => ( mono1.idpDegrees == null || mono1.idpDegrees.Length == 0 )
+																			&& ForcePrecision(mono1.Coefficient) == ForcePrecision(num);
+	public static bool operator !=(MonoEx mono1, double num) => !( mono1 == num );
+
+	#endregion
 
 	#endregion
 

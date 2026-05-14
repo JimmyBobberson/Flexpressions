@@ -6,11 +6,21 @@ namespace Flexpressions;
 
 public class Function {
 
+	#region Static Helper thingies
+
 	private const string DEFAULT_NAME = "f";
 
+	#endregion
+
+	#region State and Constructors
+
+	// The polynomial this function uses
 	private PolyEx poly;
+	// The set of vars present in the polynomial
 	private SortedSet<int> vars;
+	// The name of the function used in printing, e.g. f 
 	string functionName;
+	// Used to optimize repeated ToString calls which are expensive here
 	string? cachedFunctionString; // todo: use memoization/caching in other classes
 
 	public Function(PolyEx poly, string functionName) {
@@ -30,6 +40,10 @@ public class Function {
 	public Function(MonoEx mono, string functionName) : this(poly: mono, functionName: functionName) { }
 
 	public Function(MonoEx mono) : this(poly: mono, functionName: DEFAULT_NAME) { }
+
+	#endregion
+
+	#region Evaluation
 
 	public double this[params double[] inputs] {
 
@@ -84,6 +98,11 @@ public class Function {
 
 	}
 
+	/// <summary>
+	/// Evaluate the function and print the result as an equality <br/>(e.g., "f(2) = 4")
+	/// </summary>
+	/// <param name="inputs"></param>
+	/// <returns></returns>
 	public string ExpressOutput(params double[] inputs) {
 
 		string ret = functionName + "(";
@@ -103,6 +122,23 @@ public class Function {
 
 	}
 
+	#endregion
+
+	#region Accessors
+
+	public PolyEx Expression {
+
+		get => this.poly;
+
+		set => UpdatePoly(value);
+
+	}
+
+
+	#endregion
+
+	#region Helpers
+
 	private void UpdatePoly(PolyEx poly) {
 
 		this.poly = poly;
@@ -118,15 +154,19 @@ public class Function {
 
 	}
 
-	public PolyEx Expression {
+	#endregion
 
-		get => this.poly;
+	#region Stringy wingy
 
-		set => UpdatePoly(value);
+	public override string ToString() => this.Signature + " = " + poly;
 
-	}
-
-	public string FunctionString {
+	/// <summary>
+	/// Return the function and its args represented as a string without the polynomial <br/>
+	/// (e.g., "f(x, y)") <br/>
+	/// Use ToString to express the function as an equality alongside the polynomial <br/>
+	/// (e.g., "f(x, y) = xy")
+	/// </summary>
+	public string Signature {
 
 		get {
 
@@ -154,8 +194,7 @@ public class Function {
 
 	}
 
-
-	public override string ToString() => this.FunctionString + " = " + poly;
+	#endregion
 
 }
 
