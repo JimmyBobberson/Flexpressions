@@ -272,6 +272,20 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 
 	}
 
+	public static PolyEx operator ^(PolyEx poly, int pow) {
+
+		if (pow <= 0)
+			return 1;
+
+		PolyEx result = poly;
+
+		for (int i = 1; i < pow; i++)
+			result = result * poly;
+
+		return result;
+
+	}
+
 	#endregion
 
 	#region Accessors

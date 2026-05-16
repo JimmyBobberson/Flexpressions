@@ -24,16 +24,18 @@ public readonly record struct Flex {
 	public static readonly Flex y = new(1, 'y');
 	/// <summary> The independent variable "x" </summary>
 	public static readonly Flex z = new(2, 'z');
+	/// <summary> The independent variable "t" </summary>
+	public static readonly Flex t = new(3, 't');
 
 	/// <summary>
 	/// List of all defined Flex variables
 	/// </summary>
-	public static readonly Flex[] All = [x, y, z];
+	public static readonly Flex[] All = [x, y, z, t];
 
 	internal static readonly char[] NumToFlexChar;
 	internal static readonly int NumVars;
 
-	#endregion'
+	#endregion
 
 	#region Construction and Initialization
 

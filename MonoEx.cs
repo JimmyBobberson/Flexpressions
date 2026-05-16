@@ -17,8 +17,6 @@ namespace Flexpressions;
 /// MonoEx objects are immutable and all operations return a new object.<br/>
 /// </summary>
 
-// todo: IEnumerable
-// todo: IReadOnlyDictionary
 // todo: IParsable
 // todo: INumber
 public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
@@ -342,6 +340,20 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// <returns>Quotient of expressions as monomial</returns>
 	public static MonoEx operator /(MonoEx mono1, double scalar) => new MonoEx(ForcePrecision(mono1.Coefficient / scalar), mono1.idpDegrees);
 
+	public static MonoEx operator ^(MonoEx mono, int pow) {
+
+		if (pow <= 0)
+			return 1;
+
+		MonoEx result = mono;
+
+		for (int i = 1; i < pow; i++)
+			result = result * mono;
+
+		return result;
+
+	}
+
 	/// <summary>
 	/// Convert a lone coefficient into a monomial of that coefficient and no variables
 	/// </summary>
@@ -557,7 +569,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 
 			if (deg != 0) {
 
-				bool wrapInParenthesis = deg != 1;
+				bool wrapInParenthesis = deg != 1 && this.IndependentVariableCount != 1;
 
 				sb.Append(wrapInParenthesis ? "(" : "")
 					.Append(Flex.NumToFlexChar[i])

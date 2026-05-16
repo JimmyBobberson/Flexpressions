@@ -6,7 +6,11 @@ using System.Text;
 namespace Flexpressions;
 
 /// <summary>
-/// Functions allow the evaluation of polynomials at specific points
+/// Functions allow the evaluation of polynomials at specific points. <br/>
+/// Use [] for evaluation, and pass inputs in the following order: <i>x, y, z, t.</i> Omit variables not in your function. <br/>
+/// If the function's polynomial contains no variables, it will
+/// fall back to the last variables the function recognized, or the default variable "x". <br/>
+/// Functions have a string name (e.g., <i>f</i>) for when they are printed.
 /// </summary>
 public class Function {
 
@@ -33,10 +37,12 @@ public class Function {
 	private PolyEx poly;
 	// The set of vars present in the polynomial
 	private SortedSet<int> vars;
+	private ImmutableSortedSet<int> cachedVars;
 	// The name of the function used in printing, e.g. f 
-	string functionName;
+	private string functionName;
 	// Used to optimize repeated ToString calls which are expensive here
-	string? cachedFunctionString; // todo: use memoization/caching in other classes
+	private string? cachedFunctionString; // todo: use memoization/caching in other classes
+
 
 	/// <summary>
 	/// Construct a function using a polynomial and a defined name
@@ -46,12 +52,20 @@ public class Function {
 	public Function(PolyEx poly, string functionName) {
 
 		this.poly = poly;
-		cachedFunctionString = null;
+		this.cachedFunctionString = null;
 		this.functionName = functionName;
+		this.cachedVars = ImmutableSortedSet<int>.Empty;
 
 		vars = new SortedSet<int>();
 
-		UpdatePoly(poly);
+		UpdatePoly(poly, false);
+
+		if (vars.Count == 0) {
+
+			cachedVars = cachedVars.Add(DEFAULT_VAR.Id);
+			vars = new SortedSet<int>(cachedVars);
+
+		}
 
 	}
 
@@ -97,6 +111,8 @@ public class Function {
 
 			double result = 0;
 
+			IEnumerable<int> varList = ( cachedVars == null ) ? vars : cachedVars;
+
 			// iterate through each term
 			foreach (var mono in poly.AsSpan()) {
 
@@ -113,16 +129,9 @@ public class Function {
 				// if the second element of input is 1 and the "second" element in vars is 2
 				// we then know to input 1 into the variable associated with 2 (z)
 				int i = 0;
-				foreach (int var in vars) {
+				foreach (int var in varList) {
 
-					// todo: replace with optimized power calculation leveraging int as deg
-
-					// input for variable
-					double input = inputs[i];
-					// degree of varbiable
-					double deg = double.CreateChecked(mono.DegreeOfVariable(Flex.All[var]));
-
-					evaluatedTerm *= double.CreateChecked(double.Pow(input, deg));
+					evaluatedTerm *= DoublePow(inputs[i], mono.DegreeOfVariable(Flex.All[var]));
 
 					i++;
 
@@ -147,7 +156,9 @@ public class Function {
 
 		StringBuilder sb = new StringBuilder(functionName).Append("(");
 
-		int counter = vars.Count;
+		IEnumerable<int> varList = ( cachedVars.IsEmpty ) ? vars : cachedVars;
+
+		int counter = varList.Count();
 
 		foreach (double input in inputs) {
 
@@ -210,7 +221,10 @@ public class Function {
 
 	#region Helpers
 
-	private void UpdatePoly(PolyEx poly) {
+	// bool should be false in the constructor's call to UpdatePoly, so the constructor can handle the caching itself
+	private void UpdatePoly(PolyEx poly, bool considerCachedVars = true) {
+
+		cachedVars = vars.ToImmutableSortedSet();
 
 		poly.Sort();
 
@@ -225,7 +239,63 @@ public class Function {
 				if (mono.DegreeOfVariable(Flex.All[i]) != 0)
 					vars.Add(i);
 
+		if (vars.Count != 0)
+			cachedVars = ImmutableSortedSet<int>.Empty;
+		else if (considerCachedVars)
+			vars = new SortedSet<int>(cachedVars);
+
 	}
+
+	// ai generated
+	public static double DoublePow(double x, int n) {
+		// Handle negative exponents without stack overflow
+		if (n < 0) {
+			if (x == 0.0)
+				throw new DivideByZeroException();
+
+			// Handle int.MinValue overflow safely
+			if (n == int.MinValue) {
+				return 1.0 / ( x * DoublePow(x, int.MaxValue) );
+			}
+			return 1.0 / DoublePow(x, -n);
+		}
+
+		double result = 1.0;
+		double currentProduct = x;
+
+		while (n > 0) {
+			if (( n & 1 ) == 1) {
+				result *= currentProduct;
+			}
+			currentProduct *= currentProduct;
+			n >>= 1;
+		}
+
+		return result;
+	}
+
+	#endregion
+
+	#region Operators 
+
+	/// <summary>
+	/// Create a function using the given polynomial
+	/// </summary>
+	/// <param name="poly">Polynomial to turn into function</param>
+	public static implicit operator Function(PolyEx poly) => new Function(poly);
+
+	/// <summary>
+	/// Create a function using the given monomial
+	/// </summary>
+	/// <param name="mono">Monomial to turn into function</param>
+	public static implicit operator Function(MonoEx mono) => new Function(mono);
+
+	public static implicit operator Function(double num) => new Function(num);
+
+	public static implicit operator Function(Flex idp) => new Function(idp);
+
+	public static Function operator +(Function func1, Function func2) => new Function(func1.poly + func2.poly, "(" + func1.Name + " + " + func2.Name + ")");
+	public static Function operator *(Function func1, Function func2) => new Function(func1.poly * func2.poly, "(" + func1.Name + func2.Name + ")");
 
 	#endregion
 
@@ -244,14 +314,16 @@ public class Function {
 
 		get {
 
+			IEnumerable<int> varList = ( cachedVars.IsEmpty ) ? vars : cachedVars;
+
 			if (cachedFunctionString != null)
 				return cachedFunctionString;
 
 			StringBuilder sb = new StringBuilder(functionName).Append("(");
 
-			int counter = vars.Count;
+			int counter = varList.Count();
 
-			foreach (int idpVar in vars) {
+			foreach (int idpVar in varList) {
 
 				sb.Append(Flex.NumToFlexChar[idpVar]).Append(( ( counter != 1 ) ? ", " : "" ));
 				counter--;
