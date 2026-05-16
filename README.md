@@ -17,7 +17,7 @@ Flexpressions is a polynomial math eDSL/tool for C#.
 
 **Flexibility:** Flexpressions is flexible in its syntax but also in its overall usage. By default, Flexpressions can be used *immutably with Whiteboard,* or with more programming-standard *mutable behavior for performance-intensive scenarios* where there is a weaker desire for backend aesthetics and accessibility. Additionally, the legacy version of Flexpressions can be used when C# generic math is desired, though with worse performance and syntax versus the standard, nongeneric Flexpressions.
 
-**Abstraction:** Flexpression has its own stack of moving parts, but Whiteboard usage patterns completely hide this, allowing the user to *focus entirely on the polynomials without regard for boilerplate.* 
+**Abstraction:** Flexpression has its own stack of moving parts, but Whiteboard usage patterns completely hide this, allowing the devloper to *focus entirely on the polynomials without regard for boilerplate.* 
 
 **Performance:** Flexpressions does not seek to match the performance of other premier algebra engines, and tends to prioritize syntax over all else, but the tool does not neglect memory and runtime optimizations, even in Whiteboard. 
 
