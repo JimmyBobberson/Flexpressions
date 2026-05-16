@@ -37,7 +37,6 @@ public class Function {
 	private PolyEx poly;
 	// The set of vars present in the polynomial
 	private SortedSet<int> vars;
-	private ImmutableSortedSet<int> cachedVars;
 	// The name of the function used in printing, e.g. f 
 	private string functionName;
 	// Used to optimize repeated ToString calls which are expensive here
@@ -51,21 +50,15 @@ public class Function {
 	/// <param name="functionName">Function name used for printing</param>
 	public Function(PolyEx poly, string functionName) {
 
-		this.poly = poly;
 		this.cachedFunctionString = null;
 		this.functionName = functionName;
-		this.cachedVars = ImmutableSortedSet<int>.Empty;
 
 		vars = new SortedSet<int>();
 
-		UpdatePoly(poly, false);
+		UpdatePoly(poly);
 
-		if (vars.Count == 0) {
-
-			cachedVars = cachedVars.Add(DEFAULT_VAR.Id);
-			vars = new SortedSet<int>(cachedVars);
-
-		}
+		if (vars.Count == 0)
+			vars.Add(DEFAULT_VAR.Id);
 
 	}
 
@@ -111,8 +104,6 @@ public class Function {
 
 			double result = 0;
 
-			IEnumerable<int> varList = ( cachedVars == null ) ? vars : cachedVars;
-
 			// iterate through each term
 			foreach (var mono in poly.AsSpan()) {
 
@@ -129,7 +120,7 @@ public class Function {
 				// if the second element of input is 1 and the "second" element in vars is 2
 				// we then know to input 1 into the variable associated with 2 (z)
 				int i = 0;
-				foreach (int var in varList) {
+				foreach (int var in vars) {
 
 					evaluatedTerm *= DoublePow(inputs[i], mono.DegreeOfVariable(Flex.All[var]));
 
@@ -156,9 +147,7 @@ public class Function {
 
 		StringBuilder sb = new StringBuilder(functionName).Append("(");
 
-		IEnumerable<int> varList = ( cachedVars.IsEmpty ) ? vars : cachedVars;
-
-		int counter = varList.Count();
+		int counter = vars.Count;
 
 		foreach (double input in inputs) {
 
@@ -222,27 +211,29 @@ public class Function {
 	#region Helpers
 
 	// bool should be false in the constructor's call to UpdatePoly, so the constructor can handle the caching itself
-	private void UpdatePoly(PolyEx poly, bool considerCachedVars = true) {
+	private void UpdatePoly(PolyEx poly) {
 
-		cachedVars = vars.ToImmutableSortedSet();
+		if (vars == null)
+			vars = new SortedSet<int>();
 
-		poly.Sort();
+		SortedSet<int> cachedVars = new SortedSet<int>(vars);
+
+		vars.Clear();
+
+		//poly.Sort();
+		// sort only needed for display
 
 		this.poly = poly;
 
 		cachedFunctionString = null;
 
-		vars.Clear();
-
-		foreach (var mono in poly)
+		foreach (var mono in this.poly.AsSpan())
 			for (int i = 0; i < Flex.NumVars; i++)
 				if (mono.DegreeOfVariable(Flex.All[i]) != 0)
 					vars.Add(i);
 
-		if (vars.Count != 0)
-			cachedVars = ImmutableSortedSet<int>.Empty;
-		else if (considerCachedVars)
-			vars = new SortedSet<int>(cachedVars);
+		if (vars.Count == 0)
+			vars = cachedVars;
 
 	}
 
@@ -314,16 +305,15 @@ public class Function {
 
 		get {
 
-			IEnumerable<int> varList = ( cachedVars.IsEmpty ) ? vars : cachedVars;
 
 			if (cachedFunctionString != null)
 				return cachedFunctionString;
 
 			StringBuilder sb = new StringBuilder(functionName).Append("(");
 
-			int counter = varList.Count();
+			int counter = vars.Count;
 
-			foreach (int idpVar in varList) {
+			foreach (int idpVar in vars) {
 
 				sb.Append(Flex.NumToFlexChar[idpVar]).Append(( ( counter != 1 ) ? ", " : "" ));
 				counter--;

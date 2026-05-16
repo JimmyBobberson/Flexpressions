@@ -43,13 +43,7 @@ public readonly struct PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> 
 
 	private readonly MonoSeries termSeries;
 
-	private PolyEx(MonoSeries termSeries) {
-
-		this.termSeries = termSeries;
-
-		Sort();
-
-	}
+	private PolyEx(MonoSeries termSeries) => this.termSeries = termSeries;
 
 	internal PolyEx(MonoEx term) {
 
@@ -74,8 +68,6 @@ public readonly struct PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> 
 			termSeries.Add(new MonoEx(mono));
 
 		this.termSeries = termSeries;
-
-		Sort();
 
 	}
 	#endregion
@@ -307,6 +299,9 @@ public readonly struct PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> 
 
 		// we have guaranteed that these polynomials have the same size
 
+		poly1.Sort();
+		poly2.Sort();
+
 		var monoSpan1 = poly1.AsSpan();
 		var monoSpan2 = poly2.AsSpan();
 
@@ -432,6 +427,8 @@ public readonly struct PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> 
 
 		if (termSeries.Count == 0)
 			return sb.Append(0);
+
+		Sort();
 
 		bool firstNode = true;
 
