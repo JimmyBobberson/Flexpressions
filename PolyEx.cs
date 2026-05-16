@@ -21,8 +21,7 @@ namespace Flexpressions;
 /// </summary>
 /// 
 // todo: ICollection
-// todo: IEquatable
-public readonly struct PolyEx : IEnumerable<MonoEx> {
+public readonly struct PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	#region Static Helpers
 
@@ -44,7 +43,13 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 
 	private readonly MonoSeries termSeries;
 
-	private PolyEx(MonoSeries termSeries) => this.termSeries = termSeries;
+	private PolyEx(MonoSeries termSeries) {
+
+		this.termSeries = termSeries;
+
+		Sort();
+
+	}
 
 	internal PolyEx(MonoEx term) {
 
@@ -69,6 +74,8 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 			termSeries.Add(new MonoEx(mono));
 
 		this.termSeries = termSeries;
+
+		Sort();
 
 	}
 	#endregion
@@ -101,7 +108,7 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 
 		}
 
-		return new PolyEx(termSeries);
+		return new PolyEx(termSeries); // runs sort
 
 	}
 
@@ -141,7 +148,7 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 		else if (!foundLikeTerm)
 			monoSeries.Add(subtract ? toInsert.Flipped() : toInsert);
 
-		return new PolyEx(monoSeries);
+		return new PolyEx(monoSeries); // runs sort
 
 	}
 
@@ -285,6 +292,69 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 		return result;
 
 	}
+
+	#endregion
+
+	#region Equality
+
+	public static bool operator ==(PolyEx poly1, PolyEx poly2) {
+
+		if (poly2.Count != poly1.Count)
+			return false;
+
+		if (ReferenceEquals(poly1.termSeries, poly2.termSeries))
+			return true;
+
+		// we have guaranteed that these polynomials have the same size
+
+		var monoSpan1 = poly1.AsSpan();
+		var monoSpan2 = poly2.AsSpan();
+
+		for (int i = 0; i < monoSpan1.Length; i++)
+			if (monoSpan1[i] != monoSpan2[i])
+				return false;
+
+		return true;
+
+	}
+	public static bool operator !=(PolyEx poly1, PolyEx poly2) => !( poly1 == poly2 );
+
+	public static bool operator ==(PolyEx poly, MonoEx mono) => poly.termSeries.Count == 1 && poly.termSeries.Last() == mono;
+	public static bool operator !=(PolyEx poly, MonoEx mono) => !( poly == mono );
+	public static bool operator ==(MonoEx mono, PolyEx poly) => poly == mono;
+	public static bool operator !=(MonoEx mono, PolyEx poly) => poly != mono;
+
+	/// <returns>true if other is non-null and MonoEx, and monomials have the same variables, degrees, and coefficient</returns>
+	public override bool Equals(object? other) {
+
+		if (other == null || other.GetType() != this.GetType())
+			return false;
+
+		// the first 
+
+		var otherMono = (PolyEx)other;
+
+		return otherMono == this;
+
+	}
+
+	// needed for IEquatable
+	public bool Equals(PolyEx other) => this.Equals(other);
+
+	/// <inheritdoc cref="GetHashCode"/>
+	/// <summary>
+	/// Generates hash based on all monomials (which is based on their coefficient, all their variables, and their degrees)
+	/// </summary>
+	public override int GetHashCode() {
+
+		HashCode hash = new HashCode();
+		foreach (MonoEx mono in this.AsSpan())
+			hash.Add(mono.GetHashCode());
+
+		return hash.ToHashCode();
+
+	}
+
 
 	#endregion
 

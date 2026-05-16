@@ -93,7 +93,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	// it does restrict each monomial to only having up to 8 vars (one per byte in a ulong)
 	//		and each var can only have a degree of up to 8 (biggest int that can be stored in a byte),
 	//		but this covers 99% of use cases!
-	private record struct DegreeList : IEnumerable<int> {
+	private record struct DegreeList : IReadOnlyCollection<int> {
 
 		// notes to self:
 		// &: bit lines up with 0 in mask, bit becomes 0.
@@ -156,7 +156,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 			}
 		}
 
-		public int Length => Flex.NumVars;
+		public int Count => Flex.NumVars;
 
 		#endregion
 
@@ -308,7 +308,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 		// if either monomial is zero, skip all this var work
 		if (coefficientProduct != 0)
 			// sum variable degrees
-			for (int i = 0; i < combinedVars.Length; i++)
+			for (int i = 0; i < combinedVars.Count; i++)
 				combinedVars[i] = mono1.idpDegrees[i] + mono2.idpDegrees[i];
 
 		//todo: constructor makes a new array which is a waste because this func makes a trustable new array anyways
@@ -450,7 +450,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 		int score = 0;
 
 		// todo: keep looking into if this can be replaced with something just as effective for sorting terms
-		for (int i = 0; i < idpDegrees.Length; i++)
+		for (int i = 0; i < idpDegrees.Count; i++)
 			if (idpDegrees[i] != 0)
 				score += i << i; // this bit shift ensures that each variable (index) gets a unique score. (ai generated line, used to be score += i) 
 
@@ -563,7 +563,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 		sb.Append(( absCoef == 1 && Degree != 0 ) ? "" : absCoef.ToString());
 
 		// all vars with powers and wrapped in parenthesis
-		for (int i = 0; i < idpDegrees.Length; i++) {
+		for (int i = 0; i < idpDegrees.Count; i++) {
 
 			int deg = idpDegrees[i];
 

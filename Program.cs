@@ -8,11 +8,6 @@ namespace Flexpressions;
 // todo: implement "complex functions" which can have trig, log, exponent, rational, etc (but do not have derivative)
 // todo: advanced functions with composition and chaining
 
-// todo: equality operators for polys
-// todo: equality operators between polys and monos 
-
-// todo: mutable behavior
-
 // todo for legacy:
 //		add updated CompareTo logic
 //		add refactored Flex
