@@ -91,26 +91,119 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	#region State and Constructors
 
 	// maps independent variables to their degree
-	// var is represented by enum which is an int
-	private readonly int[] idpDegrees;
+	// this is being used as a optimized, gc-free array
+	// it does restrict each monomial to only having up to 8 vars (one per byte in a ulong)
+	//		and each var can only have a degree of up to 8 (biggest int that can be stored in a byte),
+	//		but this covers 99% of use cases!
+	private record struct DegreeList : IEnumerable<int> {
+
+		// notes to self:
+		// &: bit lines up with 0 in mask, bit becomes 0.
+		// |: bit lines up with 1 in mask, bit becomes 1.
+
+		#region Constants, State, and Constructors
+
+		private const int BITS_PER_ELEM = 8; // every 8 bits is its own int
+		private const ulong MASK = 0xFF; // hex for 255, aka max value per 8 bits. 11111111
+
+		private ulong packedInts = 0;
+
+		public DegreeList(ulong packedInts) => this.packedInts = packedInts;
+		public DegreeList() : this(0UL) { }
+
+		#endregion
+
+		#region Accessors
+
+		public int this[int index] {
+			get {
+
+				if (index >= Flex.NumVars || index < 0)
+					throw new ArgumentOutOfRangeException("Attempted to access a monomial variable out of bounds!");
+
+				// we need to move "index" positions
+				int shift = index * BITS_PER_ELEM;
+
+				// take packedInts and shift it to the right "shift" bytes
+				//		the "shift" bytes of data on the right of the element at the index get thrown away
+				//		now we just have a bunch of trailing zeroes, then the bit data we care about in the last
+				//		BITS_PER_ELEM bits of the shifted ulong.
+				// finally, apply the mask to the shifted ulong. now, everything on the left
+				//		of the rightmost BITS_PER_ELEM bits get erased. Now we have the bit representation
+				//		of the value at the index. Cast to int and return.
+				return (int)( ( packedInts >> shift ) & MASK );
+
+			}
+			set {
+
+				if (index >= Flex.NumVars || index < 0)
+					throw new ArgumentOutOfRangeException("Attempted to access a monomial variable out of bounds!");
+				if (value > (int)MASK)
+					throw new ArgumentException("Variables only support degrees of up to 255!");
+
+				int shift = index * BITS_PER_ELEM;
+
+				// Shift the mask "shift" bits to the left, then invert it (11111111 becomes 00000000)
+				// Apply the mask, which clears only the data that was aligned with the left-shifted mask
+				// Remember that left shifting adds trailing zeroes to the right which then become
+				//		ones with the inversion.
+				// Erasing this data lets us write to it properly in the next step.
+				packedInts &= ~( MASK << shift );
+
+				// apply the mask to the passed in value first. anything left of the right 8 bits
+				//		gets erased as a safety net for bad input.
+				// then, shift the corrected input to the left so it lines up with the element at the idx.
+				// finally, write the 1s from the new to the empty bits in the ulong.
+				packedInts |= ( ( (ulong)value & MASK ) << shift );
+			}
+		}
+
+		public int Length => Flex.NumVars;
+
+		#endregion
+
+		#region Operators
+
+		public static bool operator ==(DegreeList list, ulong other) => list.packedInts == other;
+		public static bool operator !=(DegreeList list, ulong other) => list.packedInts != other;
+
+		public static explicit operator DegreeList(ulong bits) => new DegreeList(bits);
+		public static explicit operator ulong(DegreeList degList) => degList.packedInts;
+
+		#endregion
+
+		#region IEnumerable
+
+		public IEnumerator<int> GetEnumerator() {
+
+			for (int i = 0; i < Flex.NumVars; i++)
+				yield return this[i];
+
+		}
+
+		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+		#endregion
+
+	}
+
+	private readonly DegreeList idpDegrees;
 
 	// coefficient of monomial
 	private readonly double coefficient;
 
-	internal MonoEx(double coefficient, int[] idpDegrees) {
+	private MonoEx(double coefficient, DegreeList idpDegrees) {
 
 		this.coefficient = ForcePrecision(coefficient);
 
-		this.idpDegrees = new int[Flex.NumVars];
-		for (int i = 0; i < idpDegrees.Length; i++)
-			this.idpDegrees[i] = idpDegrees[i];
+		this.idpDegrees = idpDegrees;
 
 	}
 
 	internal MonoEx(double coefficient) {
 
 		this.coefficient = ForcePrecision(coefficient);
-		idpDegrees = new int[Flex.NumVars];
+		idpDegrees = new DegreeList();
 
 	}
 
@@ -136,7 +229,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	#region Accessors
 
 	///<summary>
-	/// returns the degree of a given independent variable in the monomial (zero if the variable is not explicitly present)
+	/// returns the degree of a given independent variable in the monomial
 	///</summary>
 	public int DegreeOfVariable(Flex idpVar) => idpDegrees[idpVar.Id];
 
@@ -171,18 +264,18 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 
 		get {
 
-			int deg = 0;
+			int totalDeg = 0;
 
-			for (int i = 0; i < Flex.NumVars; i++)
-				deg += idpDegrees[i];
+			foreach (int deg in idpDegrees)
+				totalDeg += deg;
 
-			return deg;
+			return totalDeg;
 
 		}
 
-
-
 	}
+
+	public bool HasVariables => idpDegrees != 0UL;
 
 	#endregion
 
@@ -212,7 +305,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	public static MonoEx operator *(MonoEx mono1, MonoEx mono2) {
 
 		double coefficientProduct = ForcePrecision(mono1.coefficient * mono2.coefficient);
-		int[] combinedVars = new int[Flex.NumVars];
+		DegreeList combinedVars = new DegreeList();
 
 		// if either monomial is zero, skip all this var work
 		if (coefficientProduct != 0)
@@ -339,11 +432,12 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 
 		// a term with just x gets a score of 0, so constant terms need to have an unbeatably high score
 		//		to make them distinct and make sure they come last in order
-		if (this.Degree == 0)
+		if (!this.HasVariables)
 			return int.MaxValue;
 
 		int score = 0;
 
+		// todo: keep looking into if this can be replaced with something just as effective for sorting terms
 		for (int i = 0; i < idpDegrees.Length; i++)
 			if (idpDegrees[i] != 0)
 				score += i << i; // this bit shift ensures that each variable (index) gets a unique score. (ai generated line, used to be score += i) 
@@ -361,19 +455,22 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// </summary>
 	/// <param name="otherMono">Monomial to compare this with</param>
 	/// <returns>true if otherMono has same vars with same degrees</returns>
-	public bool IsLike(MonoEx otherMono) {
-
-		if (otherMono.IndependentVariableCount != this.IndependentVariableCount
-			|| ( this.IndependentVariableCount == otherMono.IndependentVariableCount && this.Degree != otherMono.Degree ))
-			return false;
-
-		for (int i = 0; i < otherMono.idpDegrees.Length; i++)
-			if (idpDegrees[i] != otherMono.idpDegrees[i])
-				return false;
-
+	public bool IsLike(MonoEx otherMono) => otherMono.idpDegrees == this.idpDegrees;
+	/* // OLD: 
+	// both are constants
+	if (!otherMono.HasVariables && !this.HasVariables)
 		return true;
 
-	}
+	// have dif number of variables, or same number of variables but dif degree
+	if (otherMono.IndependentVariableCount != this.IndependentVariableCount
+		|| ( this.IndependentVariableCount == otherMono.IndependentVariableCount && this.Degree != otherMono.Degree ))
+		return false;
+
+	for (int i = 0; i < otherMono.idpDegrees.Length; i++)
+		if (idpDegrees[i] != otherMono.idpDegrees[i])
+			return false;
+
+	return true; */
 
 	/// <returns>true if other is non-null and MonoEx, and monomials have the same variables, degrees, and coefficient</returns>
 	public override bool Equals(object? other) {
@@ -403,9 +500,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 
 		HashCode hash = new HashCode();
 		hash.Add(ForcePrecision(coefficient));
-
-		foreach (int deg in idpDegrees)
-			hash.Add(deg);
+		hash.Add((ulong)idpDegrees);
 
 		return hash.ToHashCode();
 
@@ -422,9 +517,8 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	// finally, if all else fails, we have to check to see if mono1 and mono2 have the same independent variables and coefficients (slow).
 	//		if so, they are equal
 	/// <returns>true if both monomials have the same variables, degrees, and coefficient</returns>
-	public static bool operator ==(MonoEx mono1, MonoEx mono2) => ReferenceEquals(mono1.idpDegrees, mono2.idpDegrees)
-																						|| ( mono1.IsLike(mono2)
-																						&& ForcePrecision(mono1.Coefficient) == ForcePrecision(mono2.Coefficient) );
+	public static bool operator ==(MonoEx mono1, MonoEx mono2) => mono1.IsLike(mono2)
+																	&& ForcePrecision(mono1.Coefficient) == ForcePrecision(mono2.Coefficient);
 
 
 	/// <returns></returns>
@@ -432,8 +526,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	public static bool operator !=(MonoEx mono1, MonoEx mono2) => !( mono1 == mono2 );
 
 	/// <returns>true if the monomial has no variables and a coefficient equal to num (both values are rounded)</returns>
-	public static bool operator ==(MonoEx mono, double num) => ( mono.idpDegrees == null || mono.idpDegrees.Length == 0 )
-																			&& ForcePrecision(mono.Coefficient) == ForcePrecision(num);
+	public static bool operator ==(MonoEx mono, double num) => !mono.HasVariables && ForcePrecision(mono.Coefficient) == ForcePrecision(num);
 
 	/// <returns>false if the monomial has no variables and a coefficient equal to num (both values are rounded)</returns>
 	public static bool operator !=(MonoEx mono, double num) => !( mono == num );
@@ -472,7 +565,6 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 					.Append(( wrapInParenthesis ? ")" : "" ));
 
 			}
-
 
 		}
 

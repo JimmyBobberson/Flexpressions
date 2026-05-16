@@ -38,16 +38,9 @@ class Program {
 		cutiepie.Expression = ( Flex.x ^ 2 ) + ( Flex.z ^ 3 ) - ( 6 * Flex.y ) + 12 + Flex.x + ( Flex.z ^ 2 );
 		Console.WriteLine(cutiepie);
 		Console.WriteLine(cutiepie.ExpressOutput(3, 5, 7));
+		Console.WriteLine(( (MonoEx)3 ) == 3);
 
-		cutiepie.Expression = ( Flex.x + 2 ) * ( Flex.y - 3 ) + 5;
-		Console.WriteLine(cutiepie);
-		Console.WriteLine(cutiepie.ExpressOutput(1, 2));
 
-		Function mylittlefriend = Function.Cubic;
-		Console.WriteLine(mylittlefriend);
-		mylittlefriend.Name = "qwrty";
-		Console.WriteLine(mylittlefriend);
-		Console.WriteLine(mylittlefriend.ExpressOutput(-9.23));
 	}
 
 }
