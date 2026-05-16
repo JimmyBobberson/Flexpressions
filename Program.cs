@@ -30,7 +30,7 @@ class Program {
 		Function ringle = Flex.x;
 		Console.WriteLine(ringle.ExpressOutput(1));*/
 
-		Function heinousPoly = ( 13 * ( Flex.x ^ 7 ) * ( Flex.y ^ 4 ) )
+		/*Function heinousPoly = ( 13 * ( Flex.x ^ 7 ) * ( Flex.y ^ 4 ) )
 					 - ( 8 * ( Flex.z ^ 5 ) * ( Flex.t ^ 9 ) )
 					 + ( 42 * ( Flex.x ^ 2 ) * Flex.y * ( Flex.z ^ 3 ) * ( Flex.t ^ 2 ) )
 					 - ( 256 * ( Flex.y ^ 12 ) )
@@ -39,7 +39,19 @@ class Program {
 
 		Console.WriteLine(heinousPoly);
 		Console.WriteLine(heinousPoly.ExpressOutput(1, -1, 1, 2));
-		Console.WriteLine(heinousPoly.ExpressOutput(2, 1, -1, 1));
+		Console.WriteLine(heinousPoly.ExpressOutput(2, 1, -1, 1));*/
+
+
+		Function f = ( Flex.x ^ 3 ) + 7;
+		Console.WriteLine(f);
+		Console.WriteLine(f.Expression);
+
+		f.Expression = Flex.x * ( Flex.z ^ 2 );
+		Console.WriteLine(f);
+		Console.WriteLine(f.ExpressOutput(3.5, 2));
+		Console.WriteLine(f[3.5, 2]);
+
+
 
 	}
 

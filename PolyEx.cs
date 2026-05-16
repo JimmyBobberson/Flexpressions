@@ -21,7 +21,7 @@ namespace Flexpressions;
 /// </summary>
 /// 
 // todo: ICollection
-public readonly struct PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
+public struct PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	#region Static Helpers
 

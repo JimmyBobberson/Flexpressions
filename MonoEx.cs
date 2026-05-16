@@ -499,7 +499,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	}
 
 	// needed for IEquatable
-	public bool Equals(MonoEx other) => this.Equals(other);
+	public bool Equals(MonoEx other) => this.Equals((object)other);
 
 	// this has to match the logic in .equals()
 	// .equals() delegates to ==
