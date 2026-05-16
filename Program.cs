@@ -3,7 +3,11 @@ using System.Diagnostics;
 
 namespace Flexpressions;
 
+// todo: use optimized version of power calculation
+
 // todo: function calculus
+
+// todo: advanced functions with composition and chaining
 
 // todo: multiply polys
 // todo: multiply polys with monos
@@ -18,10 +22,14 @@ namespace Flexpressions;
 
 // todo: mutable behavior
 
+// todo for legacy:
+//		add updated CompareTo logic
+//		add refactored Flex
+//		
+
 class Program {
 
 	static void Main(string[] args) {
-
 
 		Function cutiepie = new Function(( Flex.x ^ 2 ) + Flex.y + 6);
 		Console.WriteLine(cutiepie);
@@ -31,6 +39,15 @@ class Program {
 		Console.WriteLine(cutiepie);
 		Console.WriteLine(cutiepie.ExpressOutput(3, 5, 7));
 
+		cutiepie.Expression = ( Flex.x + 2 ) * ( Flex.y - 3 ) + 5;
+		Console.WriteLine(cutiepie);
+		Console.WriteLine(cutiepie.ExpressOutput(1, 2));
+
+		Function mylittlefriend = Function.Cubic;
+		Console.WriteLine(mylittlefriend);
+		mylittlefriend.Name = "qwrty";
+		Console.WriteLine(mylittlefriend);
+		Console.WriteLine(mylittlefriend.ExpressOutput(-9.23));
 	}
 
 }

@@ -115,8 +115,10 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	}
 
 	internal MonoEx(double coefficient, Flex independent, int degree) : this(coefficient) => idpDegrees[independent.Id] = degree;
+	internal MonoEx(double coefficient, Flex independent) : this(coefficient, independent, 1) { }
 
 	internal MonoEx(Flex independent, int degree) : this(1, independent, degree) { }
+	internal MonoEx(Flex independent) : this(1, independent, 1) { }
 
 	internal MonoEx(MonoEx other) : this(other.coefficient, other.idpDegrees) { }
 
@@ -165,7 +167,22 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	///<summary>
 	/// returns the sum of all degrees of the independent variables in the monomial expression, which is the total degree of the monomial
 	///</summary>
-	public int Degree => idpDegrees.Aggregate(0, (current, next) => current + next);
+	public int Degree {
+
+		get {
+
+			int deg = 0;
+
+			for (int i = 0; i < Flex.NumVars; i++)
+				deg += idpDegrees[i];
+
+			return deg;
+
+		}
+
+
+
+	}
 
 	#endregion
 
@@ -177,8 +194,6 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// <summary>
 	/// Add monomials, which creates a polynomial of either 1 or 2 terms depending on if the monomials were like terms
 	/// </summary>
-	/// <param name="mono1"></param>
-	/// <param name="mono2"></param>
 	/// <returns>Sum of expressions as polynomial</returns>
 	public static PolyEx operator +(MonoEx mono1, MonoEx mono2) => PolyEx.CombineMonomials(mono1, mono2, false);
 
@@ -186,8 +201,6 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// <summary>
 	/// Subtract monomials, which creates a polynomial of either 1 or 2 terms depending on if the monomials were like terms
 	/// </summary>
-	/// <param name="mono1"></param>
-	/// <param name="mono2"></param>
 	/// <returns>Difference of expressions as polynomial</returns>
 	public static PolyEx operator -(MonoEx mono1, MonoEx mono2) => PolyEx.CombineMonomials(mono1, mono2, true);
 
@@ -195,8 +208,6 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// <summary>
 	/// Multiply a monomial with another, combining coefficient and variables
 	/// </summary>
-	/// <param name="mono1"></param>
-	/// <param name="mono2"></param>
 	/// <returns>Product of expressions as monomial</returns>
 	public static MonoEx operator *(MonoEx mono1, MonoEx mono2) {
 
@@ -207,7 +218,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 		if (coefficientProduct != 0)
 			// sum variable degrees
 			for (int i = 0; i < combinedVars.Length; i++)
-				combinedVars[0] = mono1.idpDegrees[i] + mono2.idpDegrees[i];
+				combinedVars[i] = mono1.idpDegrees[i] + mono2.idpDegrees[i];
 
 		//todo: constructor makes a new array which is a waste because this func makes a trustable new array anyways
 		return new MonoEx(coefficientProduct, combinedVars);
@@ -218,21 +229,16 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// <summary>
 	/// Multiply a monomial with a scalar
 	/// </summary>
-	/// <param name="mono1"></param>
-	/// <param name="scalar"></param>
 	/// <returns>Product of expressions as monomial</returns>
 	public static MonoEx operator *(MonoEx mono1, double scalar) => new MonoEx(ForcePrecision(mono1.Coefficient * scalar), mono1.idpDegrees);
 	/// <summary>
 	/// Multiply a monomial with a scalar
 	/// </summary>
-	/// <param name="mono1"></param>
-	/// <param name="scalar"></param>
 	/// <returns>Product of expressions as monomial</returns>
 	public static MonoEx operator *(double scalar, MonoEx mono1) => new MonoEx(ForcePrecision(mono1.Coefficient * scalar), mono1.idpDegrees);
 	/// <summary>
 	/// Create the negative version of a monomial
 	/// </summary>
-	/// <param name="mono"></param>
 	/// <returns>This monomial with the opposite sign coefficient</returns>
 	public static MonoEx operator -(MonoEx mono) => mono.Flipped();
 
@@ -240,20 +246,18 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// <summary>
 	/// Divide monomial by a scalar
 	/// </summary>
-	/// <param name="mono1"></param>
-	/// <param name="scalar"></param>
 	/// <returns>Quotient of expressions as monomial</returns>
 	public static MonoEx operator /(MonoEx mono1, double scalar) => new MonoEx(ForcePrecision(mono1.Coefficient / scalar), mono1.idpDegrees);
 
 	/// <summary>
 	/// Convert a lone coefficient into a monomial of that coefficient and no variables
 	/// </summary>
-	/// <param name="num"></param>
+	/// <param name="num">Number that is secretly a constant monomial</param>
 	public static implicit operator MonoEx(double num) => new MonoEx(coefficient: num);
 	/// <summary>
 	/// Convert a lone variable into a monomial of that variable with degree 1 and coefficient 1
 	/// </summary>
-	/// <param name="idp"></param>
+	/// <param name="idp">Independent variable</param>
 	public static implicit operator MonoEx(Flex idp) => new MonoEx(independent: idp, degree: 1);
 
 	#endregion
@@ -355,7 +359,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// <summary>
 	/// Check if a monomial is a like term with this monomial
 	/// </summary>
-	/// <param name="otherMono"></param>
+	/// <param name="otherMono">Monomial to compare this with</param>
 	/// <returns>true if otherMono has same vars with same degrees</returns>
 	public bool IsLike(MonoEx otherMono) {
 
@@ -371,7 +375,6 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 
 	}
 
-	/// <param name="other"></param>
 	/// <returns>true if other is non-null and MonoEx, and monomials have the same variables, degrees, and coefficient</returns>
 	public override bool Equals(object? other) {
 
@@ -418,28 +421,20 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	// if the independent variable references are equal, the objects are equal
 	// finally, if all else fails, we have to check to see if mono1 and mono2 have the same independent variables and coefficients (slow).
 	//		if so, they are equal
-	/// <param name="mono1"></param>
-	/// <param name="mono2"></param>
 	/// <returns>true if both monomials have the same variables, degrees, and coefficient</returns>
 	public static bool operator ==(MonoEx mono1, MonoEx mono2) => ReferenceEquals(mono1.idpDegrees, mono2.idpDegrees)
 																						|| ( mono1.IsLike(mono2)
 																						&& ForcePrecision(mono1.Coefficient) == ForcePrecision(mono2.Coefficient) );
 
 
-	/// <param name="mono1"></param>
-	/// <param name="mono2"></param>
 	/// <returns></returns>
 	/// <returns>false if both monomials have the same variables, degrees, and coefficient</returns>
 	public static bool operator !=(MonoEx mono1, MonoEx mono2) => !( mono1 == mono2 );
 
-	/// <param name="mono"></param>
-	/// <param name="num"></param>
 	/// <returns>true if the monomial has no variables and a coefficient equal to num (both values are rounded)</returns>
 	public static bool operator ==(MonoEx mono, double num) => ( mono.idpDegrees == null || mono.idpDegrees.Length == 0 )
 																			&& ForcePrecision(mono.Coefficient) == ForcePrecision(num);
 
-	/// <param name="mono"></param>
-	/// <param name="num"></param>
 	/// <returns>false if the monomial has no variables and a coefficient equal to num (both values are rounded)</returns>
 	public static bool operator !=(MonoEx mono, double num) => !( mono == num );
 
@@ -459,21 +454,25 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 
 		double absCoef = double.Abs(coefficient);
 
-		// if the coefficient is one, it will be left out 
-		sb.Append(( absCoef == 1 ) ? "" : absCoef.ToString());
-
-		bool isAllAlone = ( this.IndependentVariableCount == 1 ); // solo variable has no ()
+		// if the coefficient is one and there are no vars, it will be left out 
+		sb.Append(( absCoef == 1 && Degree != 0 ) ? "" : absCoef.ToString());
 
 		// all vars with powers and wrapped in parenthesis
 		for (int i = 0; i < idpDegrees.Length; i++) {
 
 			int deg = idpDegrees[i];
 
-			if (deg != 0)
-				sb.Append(!isAllAlone ? "(" : "")
+			if (deg != 0) {
+
+				bool wrapInParenthesis = deg != 1;
+
+				sb.Append(wrapInParenthesis ? "(" : "")
 					.Append(Flex.NumToFlexChar[i])
 					.Append(DegreeToString(deg))
-					.Append(( !isAllAlone ? ")" : "" ));
+					.Append(( wrapInParenthesis ? ")" : "" ));
+
+			}
+
 
 		}
 

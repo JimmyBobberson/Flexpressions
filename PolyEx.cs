@@ -164,15 +164,11 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 	/// <summary>
 	/// Add a monomial to a polynomial
 	/// </summary>
-	/// <param name="poly"></param>
-	/// <param name="mono"></param>
 	/// <returns>Sum of expressions as polynomial</returns>
 	public static PolyEx operator +(PolyEx poly, MonoEx mono) => InsertMonomialInto(poly, mono);
 	/// <summary>
 	/// Adds all monomials from poly2 to poly1
 	/// </summary>
-	/// <param name="poly1"></param>
-	/// <param name="poly2"></param>
 	/// <returns>Sum of expressions as polynomial</returns>
 	public static PolyEx operator +(PolyEx poly1, PolyEx poly2) {
 
@@ -193,15 +189,11 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 	/// <summary>
 	/// Subtracts a monomial from a polynomial
 	/// </summary>
-	/// <param name="poly"></param>
-	/// <param name="mono"></param>
 	/// <returns>Difference of expressions as polynomial</returns>
 	public static PolyEx operator -(PolyEx poly, MonoEx mono) => InsertMonomialInto(poly, mono, true);
 	/// <summary>
 	/// Subtracts all monomials within poly2 from poly1
 	/// </summary>
-	/// <param name="poly1"></param>
-	/// <param name="poly2"></param>
 	/// <returns>Difference of expressions as polynomial</returns>
 	public static PolyEx operator -(PolyEx poly1, PolyEx poly2) {
 
@@ -222,7 +214,6 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 	/// <summary>
 	/// Create the negative version of a polynomial
 	/// </summary>
-	/// <param name="poly"></param>
 	/// <returns>This polynomial with flipped-sign coefficients</returns>
 	public static PolyEx operator -(PolyEx poly) {
 
@@ -232,6 +223,52 @@ public readonly struct PolyEx : IEnumerable<MonoEx> {
 			monoSeries.Add(-mono);
 
 		return new PolyEx(monoSeries);
+
+	}
+
+	/// <summary>
+	/// Multiply all terms in a polynomial by a monomial
+	/// </summary>
+	/// <returns>Product of expressions as a polynomial</returns>
+	public static PolyEx operator *(PolyEx poly, MonoEx mono) {
+
+		MonoSeries series = new MonoSeries();
+
+		// multiply each monomial in poly with mono
+		foreach (MonoEx toMultiplyWith in poly.AsSpan())
+			series.Add(toMultiplyWith * mono);
+
+		return new PolyEx(series);
+
+	}
+
+	/// <summary>
+	/// Multiply all terms in a polynomial by a monomial
+	/// </summary>
+	/// <returns>Product of expressions as a polynomial</returns>
+	public static PolyEx operator *(MonoEx mono, PolyEx poly) => poly * mono;
+
+	// TODO: OPTIMIZE A LOT (Delegate to mutable behavior)
+	/// <summary>
+	/// Multiply two polynomials together
+	/// </summary>
+	/// <returns>Product of expressions as a polynomial</returns>
+	public static PolyEx operator *(PolyEx poly1, PolyEx poly2) {
+
+		Queue<PolyEx> products = new Queue<PolyEx>();
+
+		// go through each term in poly2 and multiply it with poly1
+		foreach (MonoEx toMultiplyWith in poly2.AsSpan())
+			products.Enqueue(poly1 * toMultiplyWith);
+
+
+
+		PolyEx finalProduct = products.Dequeue();
+
+		while (products.Count > 0)
+			finalProduct += products.Dequeue();
+
+		return finalProduct;
 
 	}
 

@@ -89,6 +89,14 @@ public readonly record struct Flex {
 	/// <returns></returns>
 	public static PolyEx operator +(Flex f1, Flex f2) => new MonoEx(f1) + new MonoEx(f2);
 
+	public static PolyEx operator +(Flex f1, double num) => new MonoEx(f1) + new MonoEx(num);
+	public static PolyEx operator +(double num, Flex f1) => f1 + num;
+
+	public static PolyEx operator -(Flex f1, double num) => new MonoEx(f1) - new MonoEx(num);
+	public static PolyEx operator -(double num, Flex f1) => new MonoEx(num) - new MonoEx(f1);
+
+	public static MonoEx operator -(Flex f) => new MonoEx(-1, f, 1);
+
 	/// <summary>
 	/// Multiply a variable by a coefficient to get a monomial
 	/// </summary>
