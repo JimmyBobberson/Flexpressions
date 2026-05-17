@@ -99,6 +99,21 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 		// &: bit lines up with 0 in mask, bit becomes 0.
 		// |: bit lines up with 1 in mask, bit becomes 1.
 
+		#region Static Helpers
+
+		internal static DegreeList MakeDegreeList(Flex independent, int degree) {
+
+			DegreeList ret = new DegreeList();
+
+			ret[independent.Id] = degree;
+
+			return ret;
+
+		}
+
+
+		#endregion
+
 		#region Constants, State, and Constructors
 
 		private const int BITS_PER_ELEM = 8; // every 8 bits is its own int
@@ -220,7 +235,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	private readonly DegreeList idpDegrees; // maps flex (as int) to degree
 
 	// persistent aux data
-	private readonly int degree; // sum of all degrees of all variables in this mono
+	private readonly int totalDegree; // sum of all degrees of all variables in this mono
 	private readonly int independentVariableCount; // number of variables this mono actually contains
 	private readonly int variableScore; // used for CompareTo 
 
@@ -232,16 +247,14 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 
 		// calculate aux data
 		independentVariableCount = 0;
-		degree = 0;
+		totalDegree = 0;
 		variableScore = 0;
 
 		for (int i = 0; i < idpDegrees.Count; i++) {
 
-			int varDegree = idpDegrees[i];
+			totalDegree += idpDegrees[i];
 
-			degree += varDegree;
-
-			if (varDegree != 0) {
+			if (idpDegrees[i] != 0) {
 
 				independentVariableCount++;
 				variableScore += i << i; // ensure each idp has a unique val
@@ -258,7 +271,8 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 
 	internal MonoEx(double coefficient) : this(coefficient, new DegreeList()) { }
 
-	internal MonoEx(double coefficient, Flex independent, int degree) : this(coefficient) => idpDegrees[independent.Id] = degree;
+	internal MonoEx(double coefficient, Flex independent, int degree) : this(coefficient, DegreeList.MakeDegreeList(independent, degree)) { }
+
 	internal MonoEx(double coefficient, Flex independent) : this(coefficient, independent, 1) { }
 
 	internal MonoEx(Flex independent, int degree) : this(1, independent, degree) { }
@@ -297,7 +311,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	///<summary>
 	/// returns the sum of all degrees of the independent variables in the monomial expression, which is the total degree of the monomial
 	///</summary>
-	public readonly int Degree => this.degree;
+	public readonly int TotalDegree => this.totalDegree;
 
 	#endregion
 
@@ -430,7 +444,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 			if (this.IsLike(otherMono))
 				return this.Coefficient.CompareTo(otherMono.coefficient);
 
-			int degreeCompare = this.Degree.CompareTo(otherMono.Degree);
+			int degreeCompare = this.TotalDegree.CompareTo(otherMono.TotalDegree);
 			if (degreeCompare != 0)
 				return degreeCompare * -1;
 
@@ -458,28 +472,6 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	#endregion
 
 	#region Equality and Hashing
-
-	/// <summary>
-	/// Check if a monomial is a like term with this monomial
-	/// </summary>
-	/// <param name="otherMono">Monomial to compare this with</param>
-	/// <returns>true if otherMono has same vars with same degrees</returns>
-	public readonly bool IsLike(in MonoEx otherMono) => otherMono.idpDegrees == this.idpDegrees;
-	/* // OLD: 
-	// both are constants
-	if (!otherMono.HasVariables && !this.HasVariables)
-		return true;
-
-	// have dif number of variables, or same number of variables but dif degree
-	if (otherMono.IndependentVariableCount != this.IndependentVariableCount
-		|| ( this.IndependentVariableCount == otherMono.IndependentVariableCount && this.Degree != otherMono.Degree ))
-		return false;
-
-	for (int i = 0; i < otherMono.idpDegrees.Length; i++)
-		if (idpDegrees[i] != otherMono.idpDegrees[i])
-			return false;
-
-	return true; */
 
 	/// <returns>true if other is non-null and MonoEx, and monomials have the same variables, degrees, and coefficient</returns>
 	public override readonly bool Equals(object? other) {
@@ -544,6 +536,17 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 
 	#endregion
 
+	#region Helpers
+
+	/// <summary>
+	/// Check if a monomial is a like term with this monomial
+	/// </summary>
+	/// <param name="otherMono">Monomial to compare this with</param>
+	/// <returns>true if otherMono has same vars with same degrees</returns>
+	public readonly bool IsLike(in MonoEx otherMono) => otherMono.idpDegrees == this.idpDegrees;
+
+	#endregion
+
 	#region Stringy 
 
 	internal readonly StringBuilder AbsToStringBuilder() {
@@ -556,8 +559,8 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 
 		double absCoef = double.Abs(coefficient);
 
-		// if the coefficient is one and there are no vars, it will be left out 
-		sb.Append(( absCoef == 1 && Degree != 0 ) ? "" : absCoef.ToString());
+		// if the coefficient is one and there are vars, it will be left out 
+		sb.Append(( absCoef == 1 && IndependentVariableCount != 0 ) ? "" : absCoef.ToString());
 
 		// all vars with powers and wrapped in parenthesis
 		for (int i = 0; i < idpDegrees.Count; i++) {

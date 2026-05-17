@@ -149,7 +149,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 		}
 
-		return new PolyEx(termSeries); // runs sort
+		return new PolyEx(termSeries);
 
 	}
 
@@ -160,15 +160,12 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 		// see if poly contains a term like toInsert 
 		int? idxToRemove = null;
 		bool foundLikeTerm = false;
-		for (int i = 0; i < termSeries.Count; i++) {
-
-			var mono = termSeries[i];
-
-			if (mono.IsLike(toInsert)) {
+		for (int i = termSeries.Count - 1; i >= 0; i--)
+			if (termSeries[i].IsLike(toInsert)) {
 
 				foundLikeTerm = true;
 
-				double coefficientSum = mono.Coefficient + ( toInsert.Coefficient * ( subtract ? -1 : 1 ) );
+				double coefficientSum = termSeries[i].Coefficient + ( toInsert.Coefficient * ( subtract ? -1 : 1 ) );
 
 				if (coefficientSum == 0)
 					idxToRemove = i;
@@ -178,7 +175,6 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 				break;
 
 			}
-		}
 
 		if (idxToRemove != null)
 			termSeries.RemoveAt((int)idxToRemove);
@@ -218,14 +214,14 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	/// Add a monomial to a polynomial
 	/// </summary>
 	/// <returns>Sum of expressions as polynomial</returns>
-	public static PolyEx operator +(PolyEx poly, MonoEx mono) {
+	public static PolyEx operator +(PolyEx poly, in MonoEx mono) {
 
 		PolyEx temp = new PolyEx(poly);
 
 		return temp.Add(mono);
 
 	}
-	public static PolyEx operator +(MonoEx mono, PolyEx poly) => poly + mono;
+	public static PolyEx operator +(in MonoEx mono, PolyEx poly) => poly + mono;
 
 	/// <summary>
 	/// Adds all monomials from poly2 to poly1
@@ -243,14 +239,14 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	/// Subtracts a monomial from a polynomial
 	/// </summary>
 	/// <returns>Difference of expressions as polynomial</returns>
-	public static PolyEx operator -(PolyEx poly, MonoEx mono) {
+	public static PolyEx operator -(PolyEx poly, in MonoEx mono) {
 
 		PolyEx temp = new PolyEx(poly);
 
 		return temp.Subtract(mono);
 
 	}
-	public static PolyEx operator -(MonoEx mono, PolyEx poly) {
+	public static PolyEx operator -(in MonoEx mono, PolyEx poly) {
 
 		// mono - poly == -poly + mono
 		PolyEx temp = poly.Negative();
@@ -279,7 +275,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	/// Multiply all terms in a polynomial by a monomial
 	/// </summary>
 	/// <returns>Product of expressions as a polynomial</returns>
-	public static PolyEx operator *(PolyEx poly, MonoEx mono) {
+	public static PolyEx operator *(PolyEx poly, in MonoEx mono) {
 
 		PolyEx temp = new PolyEx(poly);
 
@@ -290,7 +286,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	/// Multiply all terms in a polynomial by a monomial
 	/// </summary>
 	/// <returns>Product of expressions as a polynomial</returns>
-	public static PolyEx operator *(MonoEx mono, PolyEx poly) => poly * mono;
+	public static PolyEx operator *(in MonoEx mono, PolyEx poly) => poly * mono;
 
 	// TODO: OPTIMIZE A LOT (Delegate to mutable behavior)
 	/// <summary>
@@ -625,7 +621,3 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	#endregion
 
 }
-
-
-
-
