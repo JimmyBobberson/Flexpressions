@@ -120,7 +120,7 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 
 		this.coefficient = ForcePrecision(coefficient);
 
-		this.idpDegrees = new NumType[Flex<NumType>.NUM_VARS];
+		this.idpDegrees = new NumType[Flex<NumType>.NumVars];
 		for (int i = 0; i < idpDegrees.Length; i++)
 			this.idpDegrees[i] = ForcePrecision(idpDegrees[i]);
 
@@ -129,7 +129,7 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 	public MonoEx(NumType coefficient) {
 
 		this.coefficient = ForcePrecision(coefficient);
-		idpDegrees = new NumType[Flex<NumType>.NUM_VARS];
+		idpDegrees = new NumType[Flex<NumType>.NumVars];
 
 	}
 
@@ -213,7 +213,7 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 	public static MonoEx<NumType> operator *(MonoEx<NumType> mono1, MonoEx<NumType> mono2) {
 
 		NumType coefficientProduct = ForcePrecision(mono1.coefficient * mono2.coefficient);
-		NumType[] combinedVars = new NumType[Flex<NumType>.NUM_VARS];
+		NumType[] combinedVars = new NumType[Flex<NumType>.NumVars];
 
 		// if either monomial is zero, skip all this var work
 		if (coefficientProduct != NumType.Zero)
@@ -236,7 +236,7 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 	public static MonoEx<NumType> operator /(NumType scalar, MonoEx<NumType> mono1) {
 
 		NumType coef = scalar / mono1.coefficient;
-		NumType[] idpList = new NumType[Flex<NumType>.NUM_VARS];
+		NumType[] idpList = new NumType[Flex<NumType>.NumVars];
 
 		// flip all signs cuz thats how this division works
 		for (int i = 0; i < idpList.Length; i++)
@@ -405,7 +405,7 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 
 			if (deg != NumType.Zero)
 				ret += ( !isAllAlone ? "(" : "" ) +
-					Flex<NumType>.VAR_TO_CHAR[i] + DegreeToString(deg) +
+					Flex<NumType>.All[i].Symbol + DegreeToString(deg) +
 					( !isAllAlone ? ")" : "" );
 
 		}

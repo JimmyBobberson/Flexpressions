@@ -64,7 +64,7 @@ public class Function<NumType> where NumType : INumber<NumType> {
 					// input for variable
 					double input = double.CreateChecked(inputs[i]);
 					// degree of varbiable
-					double deg = double.CreateChecked(mono.DegreeOfVariable(new Flex<NumType>(var)));
+					double deg = double.CreateChecked(mono.DegreeOfVariable(Flex<NumType>.All[var]));
 
 					evaluatedTerm *= NumType.CreateChecked(double.Pow(input, deg));
 
@@ -110,8 +110,8 @@ public class Function<NumType> where NumType : INumber<NumType> {
 		vars.Clear();
 
 		foreach (var mono in poly)
-			for (int i = 0; i < Flex<NumType>.NUM_VARS; i++)
-				if (mono.DegreeOfVariable(Flex<NumType>.NUM_TO_FLEX[i]) != NumType.Zero)
+			for (int i = 0; i < Flex<NumType>.NumVars; i++)
+				if (mono.DegreeOfVariable(Flex<NumType>.All[i]) != NumType.Zero)
 					vars.Add(i);
 
 	}
@@ -137,7 +137,7 @@ public class Function<NumType> where NumType : INumber<NumType> {
 
 			foreach (int idpVar in vars) {
 
-				ret += Flex<NumType>.VAR_TO_CHAR[idpVar] + ( ( counter != 1 ) ? ", " : "" );
+				ret += Flex<NumType>.All[idpVar].Symbol + ( ( counter != 1 ) ? ", " : "" );
 				counter--;
 
 			}
