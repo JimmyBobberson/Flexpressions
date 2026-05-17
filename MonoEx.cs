@@ -104,7 +104,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 		private const int BITS_PER_ELEM = 8; // every 8 bits is its own int
 		private const ulong MASK = 0xFF; // hex for 255, aka max value per 8 bits. 11111111
 
-		private ulong packedInts = 0;
+		private ulong packedInts = 0UL;
 
 		public DegreeList(ulong packedInts) => this.packedInts = packedInts;
 		public DegreeList() : this(0UL) { }
@@ -172,23 +172,57 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 
 		#region IEnumerable
 
-		public IEnumerator<int> GetEnumerator() {
+		// custom enum for performance
+		public struct Enumerator : IEnumerator<int> {
 
-			for (int i = 0; i < Flex.NumVars; i++)
-				yield return this[i];
+			private readonly DegreeList data; // wrapped into a DegreeList when needed
+			private int idx;
+
+			public Enumerator(DegreeList data) {
+
+				this.data = data;
+
+				idx = -1;
+
+			}
+
+			public bool MoveNext() {
+
+				idx++;
+
+				return idx < Flex.NumVars; // stop point
+
+			}
+
+			public int Current => (int)( data[idx] );
+
+			object System.Collections.IEnumerator.Current => Current;
+
+			public void Reset() => idx = -1;
+
+			public void Dispose() { }
 
 		}
 
-		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+		// this is the one used by foreach loops and it is 0 gc vs the default enumerable
+		public Enumerator GetEnumerator() => new Enumerator(this);
+
+		// these r just for the compiler, but it should use the above one
+		IEnumerator<int> IEnumerable<int>.GetEnumerator() => GetEnumerator();
+		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
 
 		#endregion
 
 	}
 
-	private readonly DegreeList idpDegrees;
+	// monomial data
+	private readonly double coefficient; // scalar multiplier of the monomial
+	private readonly DegreeList idpDegrees; // maps flex (as int) to degree
 
-	// coefficient of monomial
-	private readonly double coefficient;
+	// persistent aux data
+	private readonly int degree; // sum of all degrees of all variables in this mono
+	private readonly int independentVariableCount; // number of variables this mono actually contains
+	private readonly int variableScore; // used for CompareTo 
 
 	private MonoEx(double coefficient, DegreeList idpDegrees) {
 
@@ -196,14 +230,33 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 
 		this.idpDegrees = idpDegrees;
 
+		// calculate aux data
+		independentVariableCount = 0;
+		degree = 0;
+		variableScore = 0;
+
+		for (int i = 0; i < idpDegrees.Count; i++) {
+
+			int varDegree = idpDegrees[i];
+
+			degree += varDegree;
+
+			if (varDegree != 0) {
+
+				independentVariableCount++;
+				variableScore += i << i; // ensure each idp has a unique val
+
+			}
+
+		}
+
+		// for constant monos
+		if (independentVariableCount == 0)
+			variableScore = int.MaxValue;
+
 	}
 
-	internal MonoEx(double coefficient) {
-
-		this.coefficient = ForcePrecision(coefficient);
-		idpDegrees = new DegreeList();
-
-	}
+	internal MonoEx(double coefficient) : this(coefficient, new DegreeList()) { }
 
 	internal MonoEx(double coefficient, Flex independent, int degree) : this(coefficient) => idpDegrees[independent.Id] = degree;
 	internal MonoEx(double coefficient, Flex independent) : this(coefficient, independent, 1) { }
@@ -211,9 +264,9 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	internal MonoEx(Flex independent, int degree) : this(1, independent, degree) { }
 	internal MonoEx(Flex independent) : this(1, independent, 1) { }
 
-	internal MonoEx(MonoEx other) : this(other.coefficient, other.idpDegrees) { }
+	internal MonoEx(in MonoEx other) : this(other.coefficient, other.idpDegrees) { }
 
-	internal MonoEx(MonoEx other, double newCoefficient) : this(newCoefficient, other.idpDegrees) { }
+	internal MonoEx(in MonoEx other, double newCoefficient) : this(newCoefficient, other.idpDegrees) { }
 
 	/// <summary>
 	/// Instantiates the monomial 0
@@ -229,51 +282,22 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	///<summary>
 	/// returns the degree of a given independent variable in the monomial
 	///</summary>
-	public int DegreeOfVariable(Flex idpVar) => idpDegrees[idpVar.Id];
+	public readonly int DegreeOfVariable(Flex idpVar) => idpDegrees[idpVar.Id];
 
 	/// <summary>
 	/// returns the count of all independent variables in the monomial
 	/// </summary>
-	public int IndependentVariableCount {
-
-		get {
-
-			int count = 0;
-
-			foreach (int deg in idpDegrees)
-				if (deg != 0)
-					count++;
-
-			return count;
-
-		}
-
-	}
+	public readonly int IndependentVariableCount => this.independentVariableCount;
 
 	///<summary>
 	/// returns the coefficient of the expression
 	///</summary>
-	public double Coefficient => this.coefficient;
+	public readonly double Coefficient => this.coefficient;
 
 	///<summary>
 	/// returns the sum of all degrees of the independent variables in the monomial expression, which is the total degree of the monomial
 	///</summary>
-	public int Degree {
-
-		get {
-
-			int totalDeg = 0;
-
-			foreach (int deg in idpDegrees)
-				totalDeg += deg;
-
-			return totalDeg;
-
-		}
-
-	}
-
-	public bool HasVariables => idpDegrees != 0UL;
+	public readonly int Degree => this.degree;
 
 	#endregion
 
@@ -286,21 +310,21 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// Add monomials, which creates a polynomial of either 1 or 2 terms depending on if the monomials were like terms
 	/// </summary>
 	/// <returns>Sum of expressions as polynomial</returns>
-	public static PolyEx operator +(MonoEx mono1, MonoEx mono2) => PolyEx.CombineMonomials(mono1, mono2, false);
+	public static PolyEx operator +(in MonoEx mono1, in MonoEx mono2) => PolyEx.CombineMonomials(mono1, mono2, false);
 
 	// subtract monomials to make a polynomial
 	/// <summary>
 	/// Subtract monomials, which creates a polynomial of either 1 or 2 terms depending on if the monomials were like terms
 	/// </summary>
 	/// <returns>Difference of expressions as polynomial</returns>
-	public static PolyEx operator -(MonoEx mono1, MonoEx mono2) => PolyEx.CombineMonomials(mono1, mono2, true);
+	public static PolyEx operator -(in MonoEx mono1, in MonoEx mono2) => PolyEx.CombineMonomials(mono1, mono2, true);
 
 	// multiply monomials to get a monomial in return 
 	/// <summary>
 	/// Multiply a monomial with another, combining coefficient and variables
 	/// </summary>
 	/// <returns>Product of expressions as monomial</returns>
-	public static MonoEx operator *(MonoEx mono1, MonoEx mono2) {
+	public static MonoEx operator *(in MonoEx mono1, in MonoEx mono2) {
 
 		double coefficientProduct = ForcePrecision(mono1.coefficient * mono2.coefficient);
 		DegreeList combinedVars = new DegreeList();
@@ -321,26 +345,26 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// Multiply a monomial with a scalar
 	/// </summary>
 	/// <returns>Product of expressions as monomial</returns>
-	public static MonoEx operator *(MonoEx mono1, double scalar) => new MonoEx(ForcePrecision(mono1.Coefficient * scalar), mono1.idpDegrees);
+	public static MonoEx operator *(in MonoEx mono1, in double scalar) => new MonoEx(ForcePrecision(mono1.Coefficient * scalar), mono1.idpDegrees);
 	/// <summary>
 	/// Multiply a monomial with a scalar
 	/// </summary>
 	/// <returns>Product of expressions as monomial</returns>
-	public static MonoEx operator *(double scalar, MonoEx mono1) => new MonoEx(ForcePrecision(mono1.Coefficient * scalar), mono1.idpDegrees);
+	public static MonoEx operator *(double scalar, in MonoEx mono1) => new MonoEx(ForcePrecision(mono1.Coefficient * scalar), mono1.idpDegrees);
 	/// <summary>
 	/// Create the negative version of a monomial
 	/// </summary>
 	/// <returns>This monomial with the opposite sign coefficient</returns>
-	public static MonoEx operator -(MonoEx mono) => mono.Flipped();
+	public static MonoEx operator -(in MonoEx mono) => mono.Flipped();
 
 	// divide monomial by a scalar to get a monomial in return with the same independent variables
 	/// <summary>
 	/// Divide monomial by a scalar
 	/// </summary>
 	/// <returns>Quotient of expressions as monomial</returns>
-	public static MonoEx operator /(MonoEx mono1, double scalar) => new MonoEx(ForcePrecision(mono1.Coefficient / scalar), mono1.idpDegrees);
+	public static MonoEx operator /(in MonoEx mono1, double scalar) => new MonoEx(ForcePrecision(mono1.Coefficient / scalar), mono1.idpDegrees);
 
-	public static MonoEx operator ^(MonoEx mono, int pow) {
+	public static MonoEx operator ^(in MonoEx mono, int pow) {
 
 		if (pow <= 0)
 			return 1;
@@ -379,7 +403,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// <param name="other"></param>
 	/// <returns></returns>
 	/// <exception cref="ArgumentException"></exception>
-	public int CompareTo(object? other) {
+	public readonly int CompareTo(object? other) {
 
 		// this assumes precision has been forced consistently and accurately ... 
 
@@ -399,11 +423,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 			// we check this first because IsLike is expensive and if either is condition is true, IsLike cannot be true
 
 			// calculate variable comparison
-			// todo: can this be faster? 
-			int thisVariableScore = this.VariableScore();
-			int otherVariableScore = otherMono.VariableScore();
-
-			int variableCompare = thisVariableScore.CompareTo(otherVariableScore);
+			int variableCompare = this.variableScore.CompareTo(otherMono.variableScore);
 			if (variableCompare != 0)
 				return variableCompare;
 
@@ -429,34 +449,11 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// <param name="mono1"></param>
 	/// <param name="mono2"></param>
 	/// <returns>true if mono1 would come before mono2 in sorted order</returns>
-	public static bool GreaterOrder(MonoEx mono1, MonoEx mono2) => mono1.CompareTo(mono2) < 0;
+	public static bool GreaterOrder(in MonoEx mono1, in MonoEx mono2) => mono1.CompareTo(mono2) < 0;
 
 	/// <param name="other"></param>
 	/// <returns>true if this would come before other in sorted order</returns>
-	public bool HasGreaterOrderThan(MonoEx other) => MonoEx.GreaterOrder(this, other);
-
-	// helper for CompareTo
-	/// <summary>
-	/// Used as a tiebreaker for CompareTo by seeing which vars are present in the expression
-	/// </summary>
-	/// <returns></returns>
-	private int VariableScore() {
-
-		// a term with just x gets a score of 0, so constant terms need to have an unbeatably high score
-		//		to make them distinct and make sure they come last in order
-		if (!this.HasVariables)
-			return int.MaxValue;
-
-		int score = 0;
-
-		// todo: keep looking into if this can be replaced with something just as effective for sorting terms
-		for (int i = 0; i < idpDegrees.Count; i++)
-			if (idpDegrees[i] != 0)
-				score += i << i; // this bit shift ensures that each variable (index) gets a unique score. (ai generated line, used to be score += i) 
-
-		return score;
-
-	}
+	public readonly bool HasGreaterOrderThan(in MonoEx other) => MonoEx.GreaterOrder(this, other);
 
 	#endregion
 
@@ -467,7 +464,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// </summary>
 	/// <param name="otherMono">Monomial to compare this with</param>
 	/// <returns>true if otherMono has same vars with same degrees</returns>
-	public bool IsLike(MonoEx otherMono) => otherMono.idpDegrees == this.idpDegrees;
+	public readonly bool IsLike(in MonoEx otherMono) => otherMono.idpDegrees == this.idpDegrees;
 	/* // OLD: 
 	// both are constants
 	if (!otherMono.HasVariables && !this.HasVariables)
@@ -485,7 +482,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	return true; */
 
 	/// <returns>true if other is non-null and MonoEx, and monomials have the same variables, degrees, and coefficient</returns>
-	public override bool Equals(object? other) {
+	public override readonly bool Equals(object? other) {
 
 		if (other == null || other.GetType() != this.GetType())
 			return false;
@@ -499,7 +496,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	}
 
 	// needed for IEquatable
-	public bool Equals(MonoEx other) => this.Equals((object)other);
+	public readonly bool Equals(MonoEx other) => this.Equals((object)other);
 
 	// this has to match the logic in .equals()
 	// .equals() delegates to ==
@@ -508,7 +505,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// <summary>
 	/// Generates hash based on coefficient, all variables, and their degrees
 	/// </summary>
-	public override int GetHashCode() {
+	public override readonly int GetHashCode() {
 
 		HashCode hash = new HashCode();
 		hash.Add(ForcePrecision(coefficient));
@@ -529,19 +526,19 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	// finally, if all else fails, we have to check to see if mono1 and mono2 have the same independent variables and coefficients (slow).
 	//		if so, they are equal
 	/// <returns>true if both monomials have the same variables, degrees, and coefficient</returns>
-	public static bool operator ==(MonoEx mono1, MonoEx mono2) => mono1.IsLike(mono2)
+	public static bool operator ==(in MonoEx mono1, in MonoEx mono2) => mono1.IsLike(mono2)
 																	&& ForcePrecision(mono1.Coefficient) == ForcePrecision(mono2.Coefficient);
 
 
 	/// <returns></returns>
 	/// <returns>false if both monomials have the same variables, degrees, and coefficient</returns>
-	public static bool operator !=(MonoEx mono1, MonoEx mono2) => !( mono1 == mono2 );
+	public static bool operator !=(in MonoEx mono1, in MonoEx mono2) => !( mono1 == mono2 );
 
 	/// <returns>true if the monomial has no variables and a coefficient equal to num (both values are rounded)</returns>
-	public static bool operator ==(MonoEx mono, double num) => !mono.HasVariables && ForcePrecision(mono.Coefficient) == ForcePrecision(num);
+	public static bool operator ==(in MonoEx mono, double num) => mono.independentVariableCount == 0 && ForcePrecision(mono.Coefficient) == ForcePrecision(num);
 
 	/// <returns>false if the monomial has no variables and a coefficient equal to num (both values are rounded)</returns>
-	public static bool operator !=(MonoEx mono, double num) => !( mono == num );
+	public static bool operator !=(in MonoEx mono, double num) => !( mono == num );
 
 	#endregion
 
@@ -549,7 +546,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 
 	#region Stringy 
 
-	internal StringBuilder AbsToStringBuilder() {
+	internal readonly StringBuilder AbsToStringBuilder() {
 
 		StringBuilder sb = new StringBuilder();
 
@@ -588,12 +585,12 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// Use ToString for signed version
 	/// </summary>
 	/// <returns>Unsigned monomial as string</returns>
-	public string AbsToString() => AbsToStringBuilder().ToString();
+	public readonly string AbsToString() => AbsToStringBuilder().ToString();
 
-	internal StringBuilder ToStringBuilder() => new StringBuilder(coefficient < 0 ? "-" : "").Append(AbsToString());
+	internal readonly StringBuilder ToStringBuilder() => new StringBuilder(coefficient < 0 ? "-" : "").Append(AbsToString());
 
 	/// <returns>String representation of this monomial</returns>
-	override public string ToString() => ToStringBuilder().ToString();
+	override readonly public string ToString() => ToStringBuilder().ToString();
 
 	#endregion
 

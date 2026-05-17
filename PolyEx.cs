@@ -40,7 +40,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	}
 
-	private readonly MonoSeries termSeries;
+	private MonoSeries termSeries;
 
 	private PolyEx(MonoSeries termSeries) => this.termSeries = termSeries;
 
@@ -48,7 +48,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	/// Creates a single-term polynomial
 	/// </summary>
 	/// <param name="term">monomial term to become polynomial</param>
-	public PolyEx(MonoEx term) {
+	public PolyEx(in MonoEx term) {
 
 		MonoSeries termSeries = new MonoSeries();
 
@@ -84,7 +84,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	/// Creates a single-term polynomial with a number
 	/// </summary>
 	/// <param name="coefficient">coefficient to become MonoEx term</param>
-	public PolyEx(double coefficient) : this(new MonoEx(coefficient));
+	public PolyEx(double coefficient) : this(new MonoEx(coefficient)) { }
 
 	/// <summary>
 	/// Creates a single-term polynomial with a number, a variable, and its degree
@@ -106,7 +106,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	/// </summary>
 	/// <param name="independent">independent variable of term</param>
 	/// <param name="degree">degree of term's independent variable</param>
-	public PolyEx(Flex independent, int degree) : this(new MonoEc(independent, degree)) { }
+	public PolyEx(Flex independent, int degree) : this(new MonoEx(independent, degree)) { }
 
 	/// <summary>
 	/// Creates a single-term polynomial with a variable
@@ -126,7 +126,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	// (or construct their resultants directly)
 
 	// this is used in MonoEx
-	internal static PolyEx CombineMonomials(MonoEx mono1, MonoEx mono2, bool subtract = false) {
+	internal static PolyEx CombineMonomials(in MonoEx mono1, in MonoEx mono2, bool subtract = false) {
 
 		MonoSeries termSeries = new MonoSeries(2);
 
@@ -142,10 +142,10 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 		}
 		else {
 
-			mono2 = subtract ? mono2.Flipped() : mono2;
+			MonoEx toAdd = subtract ? mono2.Flipped() : mono2;
 
 			termSeries.Add(mono1);
-			termSeries.Add(mono2);
+			termSeries.Add(toAdd);
 
 		}
 
@@ -153,7 +153,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	}
 
-	private void InsertMonomial(MonoEx toInsert, bool subtract = false) {
+	private void InsertMonomial(in MonoEx toInsert, bool subtract = false) {
 
 		// create series to be used for new PolyEx as a copy of poly's series
 
@@ -345,7 +345,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	#region Addition and Subtraction
 
-	public PolyEx Add(MonoEx mono) {
+	public PolyEx Add(in MonoEx mono) {
 
 		InsertMonomial(mono, false);
 
@@ -355,14 +355,14 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	public PolyEx Add(PolyEx other) {
 
-		foreach (var mono in other.AsSpan())
+		foreach (ref readonly var mono in other.AsSpan())
 			InsertMonomial(mono, false);
 
 		return this;
 
 	}
 
-	public PolyEx Subtract(MonoEx mono) {
+	public PolyEx Subtract(in MonoEx mono) {
 
 		InsertMonomial(mono, true);
 
@@ -372,7 +372,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	public PolyEx Subtract(PolyEx other) {
 
-		foreach (var mono in other.AsSpan())
+		foreach (ref readonly var mono in other.AsSpan())
 			InsertMonomial(mono, true);
 
 		return this;
@@ -383,7 +383,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	#region Multiplication
 
-	public PolyEx MultiplyWith(MonoEx mono) {
+	public PolyEx MultiplyWith(in MonoEx mono) {
 
 		for (int i = 0; i < termSeries.Count; i++)
 			termSeries[i] = termSeries[i] * mono;
@@ -397,7 +397,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 		Queue<PolyEx> products = new Queue<PolyEx>();
 
 		// go through each term in poly2 and multiply it with poly1
-		foreach (MonoEx toMultiplyWith in other.AsSpan())
+		foreach (ref readonly MonoEx toMultiplyWith in other.AsSpan())
 			products.Enqueue(this * toMultiplyWith);
 
 		this.termSeries.Clear();
@@ -431,6 +431,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	}
 
+	// todo: exponent by squaring
 	public PolyEx Pow(int pow) {
 
 		if (pow <= 0)
@@ -476,8 +477,8 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	}
 	public static bool operator !=(PolyEx poly1, PolyEx poly2) => !( poly1 == poly2 );
 
-	public static bool operator ==(PolyEx poly, MonoEx mono) => poly.termSeries.Count == 1 && poly.termSeries.Last() == mono;
-	public static bool operator !=(PolyEx poly, MonoEx mono) => !( poly == mono );
+	public static bool operator ==(PolyEx poly, in MonoEx mono) => poly.termSeries.Count == 1 && poly.termSeries.Last() == mono;
+	public static bool operator !=(PolyEx poly, in MonoEx mono) => !( poly == mono );
 	public static bool operator ==(MonoEx mono, PolyEx poly) => poly == mono;
 	public static bool operator !=(MonoEx mono, PolyEx poly) => poly != mono;
 
@@ -505,7 +506,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	public override int GetHashCode() {
 
 		HashCode hash = new HashCode();
-		foreach (MonoEx mono in this.AsSpan())
+		foreach (ref readonly MonoEx mono in this.AsSpan())
 			hash.Add(mono.GetHashCode());
 
 		return hash.ToHashCode();
@@ -569,7 +570,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	}
 
 	// not sure what this does
-	System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+	System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => termSeries.GetEnumerator();
 
 	#endregion
 
@@ -594,7 +595,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 		bool firstNode = true;
 
-		foreach (var mono in this.AsSpan()) {
+		foreach (ref readonly var mono in this.AsSpan()) {
 
 			if (firstNode) {
 

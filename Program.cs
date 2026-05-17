@@ -8,6 +8,8 @@ namespace Flexpressions;
 // todo: implement "complex functions" which can have trig, log, exponent, rational, etc (but do not have derivative)
 // todo: advanced functions with composition and chaining
 
+// todo: binary search for monomial insertion to polynomial
+
 class Program {
 
 	static void Main(string[] args) {
