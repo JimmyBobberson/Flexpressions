@@ -55,7 +55,7 @@ class Program {
 		//Console.WriteLine(lol[3, 1, 2]);
 		Console.WriteLine(lol[3, 1]);
 		Console.WriteLine(each[1, 1, 1]);*/
-
+		// hi
 
 	}
 
