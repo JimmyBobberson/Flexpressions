@@ -37,14 +37,17 @@ class Program {
 		Console.WriteLine(heinousPoly.ExpressOutput(2, 1, -1, 1));*/
 
 
-		Function f = ( Flex.x ^ 3 ) + 7;
+		Function f = ( Flex.x ^ 3 ) + 7 + ( Flex.z ^ 2 ) + 6 * ( Flex.t ^ 6 );
+		Function q = new PolyEx(Flex.x, 2).Add(7).Add(new MonoEx(Flex.z, 2)).Add(6).Add(new MonoEx(Flex.t, 6));
 		Console.WriteLine(f);
 		Console.WriteLine(f.Expression);
 
 		f.Expression = Flex.x * ( Flex.z ^ 2 );
 		Console.WriteLine(f);
-		Console.WriteLine(f.ExpressOutput(3.5, 2));
-		Console.WriteLine(f[3.5, 2]);
+		f.Expression.MultiplyWith(( Flex.y ^ 4 ) + 7);
+		Console.WriteLine(f);
+		//Console.WriteLine(f.ExpressOutput(3.5, 2));
+		//Console.WriteLine(f[3.5, 2]);
 
 
 
