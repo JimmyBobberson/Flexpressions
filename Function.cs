@@ -103,16 +103,27 @@ public class Function<NumType> where NumType : INumber<NumType> {
 
 	private void UpdatePoly(PolyEx<NumType> poly) {
 
+		if (vars == null)
+			vars = new SortedSet<int>();
+
+		SortedSet<int> cachedVars = new SortedSet<int>(vars);
+
+		vars.Clear();
+
+		//poly.Sort();
+		// sort only needed for display
+
 		this.poly = poly;
 
 		cachedFunctionString = null;
 
-		vars.Clear();
-
-		foreach (var mono in poly)
+		foreach (var mono in this.poly.AsSpan())
 			for (int i = 0; i < Flex<NumType>.NumVars; i++)
 				if (mono.DegreeOfVariable(Flex<NumType>.All[i]) != NumType.Zero)
 					vars.Add(i);
+
+		if (vars.Count == 0)
+			vars = cachedVars;
 
 	}
 
