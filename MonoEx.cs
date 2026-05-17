@@ -259,9 +259,9 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 	public bool HasGreaterOrderThan(MonoEx<NumType> other) => MonoEx<NumType>.GreaterOrder(this, other);
 
 	/// <summary>
+	/// Monomials with variables come first, then constant terms <br/>
 	/// if the monomials are like terms, order them by coefficient <br/>
 	/// if the monomials are not like terms, order them by degree then by coefficient <br/>
-	/// if the monomials are not like terms but have the same degree and coefficient, order lexicographically-ish
 	/// </summary>
 	/// <param name="other"></param>
 	/// <returns></returns>
@@ -274,6 +274,8 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 		// 0: this and other are same
 		// greater than 0: this comes after other
 
+		// note that variable priority is based on the int values of the Flex variables
+
 		if (other == null)
 			return -1;
 
@@ -282,6 +284,16 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 			// if they have different independent variable counts, or same count dif degree,
 			// they cannot be alike.
 			// we check this first because IsLike is expensive and if either is condition is true, IsLike cannot be true
+
+			// calculate variable comparison
+			// todo: can this be faster? 
+			int thisVariableScore = this.VariableLexicalScore();
+			int otherVariableScore = otherMono.VariableLexicalScore();
+
+			int lexicalCompare = thisVariableScore.CompareTo(otherVariableScore);
+			if (lexicalCompare != 0)
+				return lexicalCompare;
+
 			if (this.IsLike(otherMono))
 				return this.Coefficient.CompareTo(otherMono.coefficient);
 
@@ -290,12 +302,10 @@ public readonly struct MonoEx<NumType> : IComparable where NumType : INumber<Num
 				return degreeCompare * -1;
 
 			int coefCompare = this.Coefficient.CompareTo(otherMono.coefficient);
-			if (coefCompare != 0)
-				return coefCompare * -1;
+			//if (coefCompare != 0)
+			return coefCompare * -1;
 
-			int scoreCompare = this.VariableLexicalScore().CompareTo(otherMono.VariableLexicalScore());
 
-			return scoreCompare * -1;
 
 		}
 		else
