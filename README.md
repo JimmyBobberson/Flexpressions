@@ -1,5 +1,5 @@
 # Flexpressions
-A symbolic algebra utility for C# that makes polynomial evaluation flexible and adorable. 
+A symbolic algebra utility for C# that introduces flexible and adorable polynomial composition and evaluation. 
 
 *Who said you need linear algebra?*
 
