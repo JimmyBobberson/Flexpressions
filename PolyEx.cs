@@ -77,38 +77,25 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	#region MonoEx delegates
 
 	/// <summary>
-	/// Creates a single-term polynomial with a number
+	/// Creates a single-term polynomial with a number (coefficient)
 	/// </summary>
 	/// <param name="coefficient">coefficient to become MonoEx term</param>
 	public PolyEx(double coefficient) : this(new MonoEx(coefficient)) { }
 
 	/// <summary>
-	/// Creates a single-term polynomial with a number, a variable, and its degree
+	/// Creates a single-term polynomial with a coefficient, a variable, and its degree
 	/// </summary>
 	/// <param name="coefficient">coefficient of term</param>
 	/// <param name="independent">independent variable of term</param>
 	/// <param name="degree">degree of term's independent variable</param>
-	public PolyEx(double coefficient, Flex independent, int degree) : this(new MonoEx(coefficient, independent, degree)) { }
+	public PolyEx(double coefficient, Flex independent, int degree = 1) : this(new MonoEx(coefficient, independent, degree)) { }
 
 	/// <summary>
-	/// Creates a single-term polynomial with a number and a variable
-	/// </summary>
-	/// <param name="coefficient">coefficient of term</param>
-	/// <param name="independent">independent variable of term, will have degree 1</param>
-	public PolyEx(double coefficient, Flex independent) : this(new MonoEx(coefficient, independent)) { }
-
-	/// <summary>
-	/// Creates a single-term polynomial with a variable, and its degree
+	/// Creates a single-term polynomial with a coefficient 1, a variable, and its degree
 	/// </summary>
 	/// <param name="independent">independent variable of term</param>
 	/// <param name="degree">degree of term's independent variable</param>
-	public PolyEx(Flex independent, int degree) : this(new MonoEx(independent, degree)) { }
-
-	/// <summary>
-	/// Creates a single-term polynomial with a variable
-	/// </summary>
-	/// <param name="independent">independent variable of term, will have degree 1</param>
-	public PolyEx(Flex independent) : this(new MonoEx(independent)) { }
+	public PolyEx(Flex independent, int degree = 1) : this(new MonoEx(1, independent, degree)) { }
 
 	#endregion
 

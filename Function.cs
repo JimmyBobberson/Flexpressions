@@ -44,7 +44,6 @@ public class Function {
 	// Used to optimize repeated ToString calls which are expensive here
 	private string? cachedFunctionString; // todo: use memoization/caching in other classes
 
-
 	/// <summary>
 	/// Construct a function using a polynomial and a defined name
 	/// </summary>
@@ -177,13 +176,6 @@ public class Function {
 	#region Accessors
 
 	/// <summary>
-	/// Check if this function is dependent on a certain variable
-	/// </summary>
-	/// <param name="variable">Variable to check for</param>
-	/// <returns>True if function's expression contains the variable</returns>
-	public bool HasVariable(Flex variable) => vars.Contains(variable.Id);
-
-	/// <summary>
 	/// Read or modify to the polynomial this function is associated with
 	/// </summary>
 	public PolyEx Expression {
@@ -305,7 +297,6 @@ public class Function {
 	/// <param name="poly">Polynomial to turn into function</param>
 	public static implicit operator Function(PolyEx poly) => new Function(poly);
 
-
 	/// <summary> Create a function using the given monomial</summary>
 	/// <param name="mono">Monomial to turn into function</param>
 	public static implicit operator Function(MonoEx mono) => new Function(mono);
@@ -344,7 +335,6 @@ public class Function {
 				derivative.Add(new MonoEx(mono.Coefficient * degree, newDegrees));
 
 			}
-
 
 		}
 
@@ -411,7 +401,6 @@ public class Function {
 	public string Signature {
 
 		get {
-
 
 			if (cachedFunctionString != null)
 				return cachedFunctionString;

@@ -91,7 +91,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 
 		#region Static Helpers
 
-		internal static DegreeList MakeDegreeList(Flex[] independent, params int[] degree) {
+		internal static DegreeList MakeDegreeList(Flex[] independent, int[] degree) {
 
 			if (independent.Length != degree.Length)
 				throw new ArgumentException("MakeDegreeList requires the same number of independent variables and degrees!");
@@ -274,27 +274,14 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// <param name="coefficient">Constant term to become coefficient</param>
 	/// <param name="independent">Independent variable</param>
 	/// <param name="degree">Degree of independent variable</param>
-	public MonoEx(double coefficient, Flex independent, int degree) : this(coefficient, DegreeList.MakeDegreeList([independent], degree)) { }
-
-	/// <summary>
-	/// Construct a constant monomial with a coefficient and one variable with degree 1
-	/// </summary>
-	/// <param name="coefficient">Constant term to become coefficient</param>
-	/// <param name="independent">Independent variable</param>
-	public MonoEx(double coefficient, Flex independent) : this(coefficient, independent, 1) { }
+	public MonoEx(double coefficient, Flex independent, int degree = 1) : this(coefficient, DegreeList.MakeDegreeList([independent], [degree])) { }
 
 	/// <summary>
 	/// Construct a constant monomial with coefficient 1 and one variable with a degree
 	/// </summary>
 	/// <param name="independent">Independent variable</param>
-	/// /// <param name="degree">Degree of independent variable</param>
-	public MonoEx(Flex independent, int degree) : this(1, independent, degree) { }
-
-	/// <summary>
-	/// Construct a constant monomial with coefficient 1 and one variable with degree 1
-	/// </summary>
-	/// <param name="independent">Independent variable</param>
-	public MonoEx(Flex independent) : this(1, independent, 1) { }
+	/// <param name="degree">Degree of independent variable</param>
+	public MonoEx(Flex independent, int degree = 1) : this(1, DegreeList.MakeDegreeList([independent], [degree])) { }
 
 	/// <summary>
 	/// Copy another monomial (coefficient and variables)
@@ -319,7 +306,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// <param name="varsToEdit">List of variables</param>
 	/// <param name="newDegrees">List of degrees to map to list of variables</param>
 	/// <exception cref="ArgumentException">Thrown when the count of degrees and variables does not match</exception>
-	public MonoEx(double coefficient, Flex[] varsToEdit, params int[] newDegrees) : this(coefficient, DegreeList.MakeDegreeList(varsToEdit, newDegrees)) {
+	public MonoEx(double coefficient, Flex[] varsToEdit, int[] newDegrees) : this(coefficient, DegreeList.MakeDegreeList(varsToEdit, newDegrees)) {
 
 		if (varsToEdit.Length != newDegrees.Length)
 			throw new ArgumentException("Constructor requires the same number of independent variables and degrees!");
