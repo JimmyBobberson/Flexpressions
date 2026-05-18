@@ -197,17 +197,30 @@ public class Function {
 
 	}
 
-	/*	public Flex[] Variables {
+	/// <summary>
+	/// The list of variables present in this function, in proper sorted order
+	/// </summary>
+	public Flex[] Variables {
 
-			get {
+		get {
 
-				Flex[] ret = new Flex[vars.Count];
+			Flex[] flexArray = new Flex[vars.Count];
 
+			var varIt = vars.GetEnumerator();
+
+			for (int i = 0; i < vars.Count; i++) {
+
+				flexArray[i] = Flex.All[varIt.Current];
+
+				varIt.MoveNext();
 
 			}
 
+			return flexArray;
 
-		}*/
+		}
+
+	}
 
 	/// <summary>
 	/// Check if the function is dependent on a certain independent variable
@@ -344,16 +357,31 @@ public class Function {
 		if (order <= 0)
 			return this;
 
-		for (int i = 0; i < order; i++) {
+		if (NumVariables == 0)
+			poly = 0;
+		else
+			for (int i = 0; i < order; i++) {
 
-			poly = Function.DifferentiatePoly(poly, changeInVariable);
-			this.Name = functionName + PRIME;
+				poly = Function.DifferentiatePoly(poly, changeInVariable);
+				this.Name = functionName + PRIME;
 
-		}
+			}
 
 		return this;
 
 	}
+
+	/// <summary>
+	/// Find the derivative of this function of a specific order with respect to 
+	/// the first variable found in the function by sorted order (mutates this function)<br/> 
+	/// <i>(useful for single-var functions)</i> <br/>
+	/// If this function has one variable, the result is the derivative, but if there are multiple variables, the
+	/// result is the partial derivative.<br/>
+	/// </summary>
+	/// <param name="order">degree of derivative (first, second, etc)</param>
+	/// <returns>this (as the order-th derivative of itself prior to the execution of the method)</returns>
+	public Function Differentiate(int order = 1) => NumVariables != 0 ? Differentiate(Flex.All[this.vars.First()], order)
+																		: Differentiate(DEFAULT_VAR, order);
 
 	/// <summary>
 	/// Find the derivative of this function of a specific order with respect to a variable. <br/>
@@ -361,14 +389,18 @@ public class Function {
 	/// result is the partial derivative.<br/>
 	/// </summary>
 	/// <param name="changeInVariable">variable to differentiate with respect towards</param>
-	/// /// <param name="order">degree of derivative (first, second, etc)</param>
+	/// <param name="order">degree of derivative (first, second, etc)</param>
 	/// <returns>The order-th derivative of the function with respect to the change in variable, or this if order is 0 or less</returns>
 	public Function Derivative(Flex changeInVariable, int order = 1) {
 
 		if (order <= 0)
 			return this;
 
+		if (NumVariables == 0)
+			return new Function(0);
+
 		PolyEx derivative = new PolyEx(this.poly);
+
 		string newFunctionName = this.functionName;
 
 		for (int i = 0; i < order; i++) {
@@ -381,6 +413,18 @@ public class Function {
 		return new Function(derivative, newFunctionName);
 
 	}
+
+	/// <summary>
+	/// Find the derivative of this function of a specific order with respect to 
+	/// the first variable found in the function by sorted order <br/> 
+	/// <i>(useful for single-var functions)</i> <br/>
+	/// If this function has one variable, the result is the derivative, but if there are multiple variables, the
+	/// result is the partial derivative.<br/>
+	/// </summary>
+	/// <param name="order">degree of derivative (first, second, etc)</param>
+	/// <returns>The order-th derivative of the function with respect to the change in variable, or this if order is 0 or less</returns>
+	public Function Derivative(int order = 1) => NumVariables != 0 ? Derivative(Flex.All[this.vars.First()], order)
+																		: Derivative(DEFAULT_VAR, order);
 
 	/// <summary>
 	/// Find the gradient of a function, aka an array of its partial derivatives with respect to each variable. <br/>

@@ -13,8 +13,6 @@ namespace Flexpressions;
 /// Polynomial expressions can be used in Functions to be evaluated.
 /// 
 /// </summary>
-/// 
-// todo: ICollection
 public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	#region Static Helpers
