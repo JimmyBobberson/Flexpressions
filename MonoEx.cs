@@ -93,7 +93,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	// it does restrict each monomial to only having up to 8 vars (one per byte in a ulong)
 	//		and each var can only have a degree of up to 8 (biggest int that can be stored in a byte),
 	//		but this covers 99% of use cases!
-	private record struct DegreeList : IReadOnlyCollection<int> {
+	internal record struct DegreeList : IReadOnlyCollection<int> {
 
 		// notes to self:
 		// &: bit lines up with 0 in mask, bit becomes 0.
@@ -101,11 +101,15 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 
 		#region Static Helpers
 
-		internal static DegreeList MakeDegreeList(Flex independent, int degree) {
+		internal static DegreeList MakeDegreeList(Flex[] independent, params int[] degree) {
+
+			if (independent.Length != degree.Length)
+				throw new ArgumentException("MakeDegreeList requires the same number of independent variables and degrees!");
 
 			DegreeList ret = new DegreeList();
 
-			ret[independent.Id] = degree;
+			for (int i = 0; i < independent.Length; i++)
+				ret[independent[i].Id] = degree[i];
 
 			return ret;
 
@@ -239,7 +243,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	private readonly int independentVariableCount; // number of variables this mono actually contains
 	private readonly int variableScore; // used for CompareTo 
 
-	private MonoEx(double coefficient, DegreeList idpDegrees) {
+	internal MonoEx(double coefficient, DegreeList idpDegrees) {
 
 		this.coefficient = ForcePrecision(coefficient);
 
@@ -271,7 +275,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 
 	internal MonoEx(double coefficient) : this(coefficient, new DegreeList()) { }
 
-	internal MonoEx(double coefficient, Flex independent, int degree) : this(coefficient, DegreeList.MakeDegreeList(independent, degree)) { }
+	internal MonoEx(double coefficient, Flex independent, int degree) : this(coefficient, DegreeList.MakeDegreeList([independent], degree)) { }
 
 	internal MonoEx(double coefficient, Flex independent) : this(coefficient, independent, 1) { }
 
@@ -287,6 +291,14 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// </summary>
 	public MonoEx() : this(0) { }
 
+	// edit degrees
+	internal MonoEx(double coefficient, Flex[] varsToEdit, params int[] newDegrees) : this(coefficient, DegreeList.MakeDegreeList(varsToEdit, newDegrees)) {
+
+		if (varsToEdit.Length != newDegrees.Length)
+			throw new ArgumentException("Constructor requires the same number of independent variables and degrees!");
+
+	}
+
 	internal MonoEx Flipped() => new MonoEx(this, -this.coefficient);
 
 	#endregion
@@ -297,6 +309,8 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// returns the degree of a given independent variable in the monomial
 	///</summary>
 	public readonly int DegreeOfVariable(Flex idpVar) => idpDegrees[idpVar.Id];
+
+	public readonly bool HasVariable(Flex idpVar) => DegreeOfVariable(idpVar) != 0;
 
 	/// <summary>
 	/// returns the count of all independent variables in the monomial
@@ -312,6 +326,8 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// returns the sum of all degrees of the independent variables in the monomial expression, which is the total degree of the monomial
 	///</summary>
 	public readonly int TotalDegree => this.totalDegree;
+
+	internal readonly DegreeList DegreeData => this.idpDegrees;
 
 	#endregion
 

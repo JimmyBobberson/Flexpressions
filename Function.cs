@@ -81,6 +81,8 @@ public class Function {
 	/// <param name="mono">[Poly]nomial this function will use</param>
 	public Function(MonoEx mono) : this(poly: mono, functionName: DEFAULT_NAME) { }
 
+	public Function(Function other) : this(other.poly, other.functionName) { }
+
 	#endregion
 
 	#region Evaluation
@@ -166,6 +168,8 @@ public class Function {
 
 	#region Accessors
 
+	public bool HasVariable(Flex variable) => vars.Contains(variable.Id);
+
 	/// <summary>
 	/// Read or modify to the polynomial this function is associated with
 	/// </summary>
@@ -198,6 +202,18 @@ public class Function {
 		}
 
 	}
+
+	/*	public Flex[] Variables {
+
+			get {
+
+				Flex[] ret = new Flex[vars.Count];
+
+
+			}
+
+
+		}*/
 
 	/// <summary>
 	/// Check if the function is dependent on a certain independent variable
@@ -287,6 +303,83 @@ public class Function {
 
 	public static Function operator +(Function func1, Function func2) => new Function(func1.poly + func2.poly, "(" + func1.Name + " + " + func2.Name + ")");
 	public static Function operator *(Function func1, Function func2) => new Function(func1.poly * func2.poly, "(" + func1.Name + func2.Name + ")");
+
+	#endregion
+
+	#region Behaviors (Calculus)
+
+	/// <summary>
+	/// Find the derivative of this function with respect to a variable. <br/>
+	/// If this function has one variable, the result is the derivative, but if there are multiple variables, the
+	/// result is the partial derivative.
+	/// </summary>
+	/// <param name="changeInVariable">variable to differentiate with respect towards</param>
+	/// <returns>The 1st derivative of the function with respect to the change in variable</returns>
+	public Function Derivative(Flex changeInVariable) {
+
+		PolyEx derivative = new PolyEx();
+
+		foreach (ref readonly var mono in poly.AsSpan()) {
+
+			int degree = mono.DegreeOfVariable(changeInVariable);
+
+			if (degree != 0) {
+
+				MonoEx.DegreeList newDegrees = mono.DegreeData;
+				newDegrees[changeInVariable.Id] = degree - 1;
+				derivative.Add(new MonoEx(mono.Coefficient * degree, newDegrees));
+
+			}
+
+
+		}
+
+		return new Function(derivative, this.functionName + "'");
+
+	}
+
+	/// <summary>
+	/// Find the derivative of this function of a specific order with respect to a variable. <br/>
+	/// If this function has one variable, the result is the derivative, but if there are multiple variables, the
+	/// result is the partial derivative.<br/>
+	/// </summary>
+	/// <param name="order">degree of derivative (first, second, etc)</param>
+	/// <param name="changeInVariable">variable to differentiate with respect towards</param>
+	/// <returns>The order-th derivative of the function with respect to the change in variable, or this if order <= 0</returns>
+	public Function Derivative(int order, Flex changeInVariable) {
+
+		if (order <= 0)
+			return this;
+
+		Function result = new Function(this);
+
+		for (int i = 0; i < order; i++)
+			result = result.Derivative(changeInVariable);
+
+		return result;
+
+	}
+
+	/// <summary>
+	/// Find the gradient of a function, aka an array of its partial derivatives with respect to each variable. <br/>
+	/// </summary>
+	/// <returns>array of derivatives, each a derivative of this function with respect to a variable it containst</returns>
+	public Function[] Gradient() {
+
+		Function[] gradient = new Function[vars.Count];
+
+		int i = 0;
+		foreach (int idp in vars) {
+
+			gradient[i] = this.Derivative(Flex.All[idp]);
+
+			i++;
+
+		}
+
+		return gradient;
+
+	}
 
 	#endregion
 
