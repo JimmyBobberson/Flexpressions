@@ -1,0 +1,43 @@
+name: Deploy to NuGet
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger this workflow whenever you push a version tag like v1.0.1
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    # CRITICAL: Grants permission to create public GitHub release pages and upload notes
+    permissions:
+      contents: write 
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x' 
+
+    - name: Restore Dependencies
+      run: dotnet restore
+
+    - name: Compile Release Binary
+      run: dotnet build -c Release --no-restore
+
+    - name: Create NuGet Package
+      run: dotnet pack -c Release --no-build
+
+    - name: Publish to NuGet.org
+      run: dotnet nuget push bin/Release/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+      
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: Release ${{ github.ref_name }}
+        generate_release_notes: true 
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
