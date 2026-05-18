@@ -262,26 +262,64 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 
 	}
 
-	internal MonoEx(double coefficient) : this(coefficient, new DegreeList()) { }
+	/// <summary>
+	/// Construct a constant monomial with a coefficient and no variables
+	/// </summary>
+	/// /// <param name="coefficient">Constant term to become monomial</param>
+	public MonoEx(double coefficient) : this(coefficient, new DegreeList()) { }
 
-	internal MonoEx(double coefficient, Flex independent, int degree) : this(coefficient, DegreeList.MakeDegreeList([independent], degree)) { }
+	/// <summary>
+	/// Construct a constant monomial with a coefficient and one variable with a degree
+	/// </summary>
+	/// <param name="coefficient">Constant term to become coefficient</param>
+	/// <param name="independent">Independent variable</param>
+	/// <param name="degree">Degree of independent variable</param>
+	public MonoEx(double coefficient, Flex independent, int degree) : this(coefficient, DegreeList.MakeDegreeList([independent], degree)) { }
 
-	internal MonoEx(double coefficient, Flex independent) : this(coefficient, independent, 1) { }
+	/// <summary>
+	/// Construct a constant monomial with a coefficient and one variable with degree 1
+	/// </summary>
+	/// <param name="coefficient">Constant term to become coefficient</param>
+	/// <param name="independent">Independent variable</param>
+	public MonoEx(double coefficient, Flex independent) : this(coefficient, independent, 1) { }
 
-	internal MonoEx(Flex independent, int degree) : this(1, independent, degree) { }
-	internal MonoEx(Flex independent) : this(1, independent, 1) { }
+	/// <summary>
+	/// Construct a constant monomial with coefficient 1 and one variable with a degree
+	/// </summary>
+	/// <param name="independent">Independent variable</param>
+	/// /// <param name="degree">Degree of independent variable</param>
+	public MonoEx(Flex independent, int degree) : this(1, independent, degree) { }
 
-	internal MonoEx(in MonoEx other) : this(other.coefficient, other.idpDegrees) { }
+	/// <summary>
+	/// Construct a constant monomial with coefficient 1 and one variable with degree 1
+	/// </summary>
+	/// <param name="independent">Independent variable</param>
+	public MonoEx(Flex independent) : this(1, independent, 1) { }
 
-	internal MonoEx(in MonoEx other, double newCoefficient) : this(newCoefficient, other.idpDegrees) { }
+	/// <summary>
+	/// Copy another monomial (coefficient and variables)
+	/// </summary>
+	public MonoEx(in MonoEx other) : this(other.coefficient, other.idpDegrees) { }
+
+	/// <summary>
+	/// Copy another monomial's variables but with a new coefficient 
+	/// </summary>
+	public MonoEx(in MonoEx other, double newCoefficient) : this(newCoefficient, other.idpDegrees) { }
 
 	/// <summary>
 	/// Instantiates the monomial 0
 	/// </summary>
 	public MonoEx() : this(0) { }
 
-	// edit degrees
-	internal MonoEx(double coefficient, Flex[] varsToEdit, params int[] newDegrees) : this(coefficient, DegreeList.MakeDegreeList(varsToEdit, newDegrees)) {
+	/// <summary>
+	/// Create a monomial with a coefficient and a set of variables, each with their own degree<para/>
+	/// It is generally reccomended to multiply monomials together instead, as this can fail if the number of variables and degrees do not match. <para/>
+	/// </summary>
+	/// <param name="coefficient">Coefficient of new monomial</param>
+	/// <param name="varsToEdit">List of variables</param>
+	/// <param name="newDegrees">List of degrees to map to list of variables</param>
+	/// <exception cref="ArgumentException">Thrown when the count of degrees and variables does not match</exception>
+	public MonoEx(double coefficient, Flex[] varsToEdit, params int[] newDegrees) : this(coefficient, DegreeList.MakeDegreeList(varsToEdit, newDegrees)) {
 
 		if (varsToEdit.Length != newDegrees.Length)
 			throw new ArgumentException("Constructor requires the same number of independent variables and degrees!");
@@ -388,6 +426,13 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// <returns>Quotient of expressions as a new monomial</returns>
 	public static MonoEx operator /(in MonoEx mono1, double scalar) => new MonoEx(ForcePrecision(mono1.Coefficient / scalar), mono1.idpDegrees);
 
+	/// <summary>
+	/// Take a monomial to a power
+	/// </summary>
+	/// <param name="mono">Monomial expression to take to power</param>
+	/// <param name="pow">Exponent to take monomial to</param>
+	/// <returns>Power of monomial as new monomial</returns>
+	/// <exception cref="InvalidOperationException">When negative power</exception>
 	public static MonoEx operator ^(in MonoEx mono, int pow) {
 
 		if (pow < 0)
@@ -508,7 +553,7 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 
 	}
 
-	// needed for IEquatable
+	/// <returns>true if other is non-null and MonoEx, and monomials have the same variables, degrees, and coefficient</returns>
 	public readonly bool Equals(MonoEx other) => this.Equals((object)other);
 
 	// this has to match the logic in .equals()

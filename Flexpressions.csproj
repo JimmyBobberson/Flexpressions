@@ -1,11 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-	  <GenerateDocumentationFile>true</GenerateDocumentationFile>
-	  <OutputType>Exe</OutputType>
-	<TargetFramework>net10.0</TargetFramework>
-	<ImplicitUsings>enable</ImplicitUsings>
-	<Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<OutputType>Library</OutputType>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+
+		<!-- NuGet Properties -->
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageId>studio1125.Flexpressions</PackageId>
+		<Version>1.0.0</Version>
+		<Authors>Jimmy Bobberson</Authors>
+		<Description>Math function/expression utility (eDSL) with an emphasis on whiteboard-style usability and DX</Description>
+		<RepositoryUrl>https://github.com/JimmyBobberson/Flexpressions</RepositoryUrl>
+		<PackageTags>math;expressions;edsl;utility;dx;polynomial</PackageTags>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="\"/>
+	</ItemGroup>
 
 </Project>

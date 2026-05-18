@@ -85,6 +85,10 @@ public class Function {
 	/// <param name="mono">[Poly]nomial this function will use</param>
 	public Function(MonoEx mono) : this(poly: mono, functionName: DEFAULT_NAME) { }
 
+	/// <summary>
+	/// Copy a function
+	/// </summary>
+	/// <param name="other">Function to take expression and name from</param>
 	public Function(Function other) : this(other.poly, other.functionName) { }
 
 	#endregion

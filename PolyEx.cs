@@ -217,6 +217,10 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 		return temp.Add(mono);
 
 	}
+	/// <summary>
+	/// Add a monomial to a polynomial
+	/// </summary>
+	/// <returns>Sum of expressions as a new polynomial</returns>
 	public static PolyEx operator +(in MonoEx mono, PolyEx poly) => poly + mono;
 
 	/// <summary>
@@ -320,7 +324,8 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	/// <summary>
 	/// Divide a polynomial by a constant 
 	/// </summary>
-	/// <param name="num">Constant expression</param>
+	/// /// <param name="poly">Polynomial dividend</param>
+	/// <param name="num">Constant expression divisor</param>
 	/// <returns>Quotient of operation as new polynomial</returns>
 	public static PolyEx operator /(PolyEx poly, double num) {
 
@@ -333,7 +338,8 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	/// <summary>
 	/// Take polynomial to a power
 	/// </summary>
-	/// <param name="pow">exponent</param>
+	/// <param name="poly">Polynomial expression</param>
+	/// <param name="pow">Exponent to take poynomial to</param>
 	/// <returns>Power of polynomial as new polynomial</returns>
 	public static PolyEx operator ^(PolyEx poly, int pow) {
 
@@ -524,9 +530,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 		if (ReferenceEquals(poly1, poly2))
 			return true;
 
-		if (( poly1 is null && poly2 is not null ) ||
-			( poly1 is not null && poly2 is null ) ||
-			( poly2.Count != poly1.Count ))
+		if (poly1 is null || poly2 is null || poly1.Count != poly2.Count)
 			return false;
 
 		if (ReferenceEquals(poly1.termSeries, poly2.termSeries)) // should never be true tbh
