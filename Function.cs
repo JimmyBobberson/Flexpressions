@@ -13,6 +13,7 @@ public class Function {
 
 	private const string DEFAULT_NAME = "f";
 	private static readonly Flex DEFAULT_VAR = Flex.x;
+	private const char PRIME = '\'';
 
 	/// <summary> The function f(x) = 0 </summary>
 	public static readonly Function Zero = new Function(0, DEFAULT_NAME);
@@ -49,7 +50,7 @@ public class Function {
 	/// </summary>
 	/// <param name="poly">Polynomial this function will use</param>
 	/// <param name="functionName">Function name used for printing</param>
-	public Function(PolyEx poly, string functionName) {
+	public Function(PolyEx poly, string functionName = DEFAULT_NAME) {
 
 		this.cachedFunctionString = null;
 		this.functionName = functionName;
@@ -66,29 +67,17 @@ public class Function {
 	}
 
 	/// <summary>
-	/// Construct a function <i>f</i> using a polynomial
-	/// </summary>
-	/// <param name="poly">Polynomial this function will use</param>
-	public Function(PolyEx poly) : this(poly: poly, functionName: DEFAULT_NAME) { }
-
-	/// <summary>
 	/// Construct a function using a monomial (single-term polynomial) and a defined name
 	/// </summary>
 	/// <param name="mono">[Poly]nomial this function will use</param>
 	/// <param name="functionName">Function name used for printing</param>
-	public Function(MonoEx mono, string functionName) : this(poly: mono, functionName: functionName) { }
-
-	/// <summary>
-	/// Construct a function <i>f</i> using a monomial (single-term polynomial)
-	/// </summary>
-	/// <param name="mono">[Poly]nomial this function will use</param>
-	public Function(MonoEx mono) : this(poly: mono, functionName: DEFAULT_NAME) { }
+	public Function(MonoEx mono, string functionName = DEFAULT_NAME) : this(poly: mono, functionName: functionName) { }
 
 	/// <summary>
 	/// Copy a function
 	/// </summary>
 	/// <param name="other">Function to take expression and name from</param>
-	public Function(Function other) : this(other.poly, other.functionName) { }
+	public Function(Function other) : this(new PolyEx(other.poly), other.functionName) { }
 
 	#endregion
 
@@ -314,13 +303,12 @@ public class Function {
 	#region Behaviors (Calculus)
 
 	/// <summary>
-	/// Find the derivative of this function with respect to a variable. <br/>
-	/// If this function has one variable, the result is the derivative, but if there are multiple variables, the
-	/// result is the partial derivative.
+	/// 
 	/// </summary>
-	/// <param name="changeInVariable">variable to differentiate with respect towards</param>
-	/// <returns>The 1st derivative of the function with respect to the change in variable</returns>
-	public Function Derivative(Flex changeInVariable) {
+	/// <param name="poly"></param>
+	/// <param name="changeInVariable"></param>
+	/// <returns></returns>
+	private static PolyEx DifferentiatePoly(PolyEx poly, Flex changeInVariable) {
 
 		PolyEx derivative = new PolyEx();
 
@@ -332,13 +320,38 @@ public class Function {
 
 				MonoEx.DegreeList newDegrees = mono.DegreeData;
 				newDegrees[changeInVariable.Id] = degree - 1;
+
 				derivative.Add(new MonoEx(mono.Coefficient * degree, newDegrees));
 
 			}
 
 		}
 
-		return new Function(derivative, this.functionName + "'");
+		return derivative;
+
+	}
+
+	/// <summary>
+	/// Find the derivative of this function of a specific order with respect to a variable. (mutates this function) <br/>
+	/// If this function has one variable, the result is the derivative, but if there are multiple variables, the
+	/// result is the partial derivative.<br/>
+	/// </summary>
+	/// <param name="changeInVariable">variable to differentiate with respect towards</param>
+	/// <param name="order">degree of derivative (first, second, etc)</param>
+	/// <returns>this (as the order-th derivative of itself prior to the execution of the method)</returns>
+	public Function Differentiate(Flex changeInVariable, int order = 1) {
+
+		if (order <= 0)
+			return this;
+
+		for (int i = 0; i < order; i++) {
+
+			poly = Function.DifferentiatePoly(poly, changeInVariable);
+			this.Name = functionName + PRIME;
+
+		}
+
+		return this;
 
 	}
 
@@ -347,20 +360,25 @@ public class Function {
 	/// If this function has one variable, the result is the derivative, but if there are multiple variables, the
 	/// result is the partial derivative.<br/>
 	/// </summary>
-	/// <param name="order">degree of derivative (first, second, etc)</param>
 	/// <param name="changeInVariable">variable to differentiate with respect towards</param>
+	/// /// <param name="order">degree of derivative (first, second, etc)</param>
 	/// <returns>The order-th derivative of the function with respect to the change in variable, or this if order is 0 or less</returns>
-	public Function Derivative(int order, Flex changeInVariable) {
+	public Function Derivative(Flex changeInVariable, int order = 1) {
 
 		if (order <= 0)
 			return this;
 
-		Function result = new Function(this);
+		PolyEx derivative = new PolyEx(this.poly);
+		string newFunctionName = this.functionName;
 
-		for (int i = 0; i < order; i++)
-			result = result.Derivative(changeInVariable);
+		for (int i = 0; i < order; i++) {
 
-		return result;
+			derivative = Function.DifferentiatePoly(derivative, changeInVariable);
+			newFunctionName += PRIME;
+
+		}
+
+		return new Function(derivative, newFunctionName);
 
 	}
 
