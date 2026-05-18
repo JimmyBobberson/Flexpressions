@@ -13,7 +13,7 @@ namespace Flexpressions;
 /// <summary>
 /// <b>A MonoEx (monomial expression) is the product of a coefficient and a set of independent variables (each with a degree).</b> <para/>
 /// MonoEx objects are the fundamental building blocks of Flexpressions.<br/>
-/// All powers are doubles (rounded) and all powers are integers
+/// All powers are doubles (rounded) and all powers are integers <br/>
 /// MonoEx objects are immutable and all operations return a new object.<br/>
 /// </summary>
 
@@ -396,13 +396,24 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 
 	public static MonoEx operator ^(in MonoEx mono, int pow) {
 
-		if (pow <= 0)
+		if (pow < 0)
+			throw new InvalidOperationException("Cannot take a monomial to a negative power!");
+
+		if (pow == 0)
 			return 1;
 
-		MonoEx result = mono;
+		MonoEx result = 1;
+		MonoEx currentProduct = mono;
 
-		for (int i = 1; i < pow; i++)
-			result = result * mono;
+		while (pow > 0) {
+
+			if (( pow & 1 ) == 1)
+				result *= currentProduct;
+
+			currentProduct *= currentProduct;
+			pow >>= 1;
+
+		}
 
 		return result;
 
@@ -614,8 +625,3 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	#endregion
 
 }
-
-
-
-
-

@@ -39,10 +39,10 @@ public readonly record struct Flex {
 
 	#region Construction and Initialization
 
-	static Flex() {
-		// runs on app start
-		// this is the one ai generated code im using without knowing what it does but it automatically maintains the internal data
-		//		as long as my vars are manually maintained
+	static Flex() { // todo: consider moving this back to hardcode since reflection apparently has issues in some use cases
+					// runs on app start
+					// this is the one ai generated code im using without knowing what it does but it automatically maintains the internal data
+					//		as long as my vars are manually maintained
 		var fields = typeof(Flex).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
 						 .Where(f => f.FieldType == typeof(Flex))
 						 .Select(f => f.GetValue(null))

@@ -256,14 +256,15 @@ public class Function {
 	// ai generated
 	public static double DoublePow(double x, int n) {
 		// Handle negative exponents without stack overflow
+		// note from not an ai: n will never be less than 0 
 		if (n < 0) {
 			if (x == 0.0)
 				throw new DivideByZeroException();
 
 			// Handle int.MinValue overflow safely
-			if (n == int.MinValue) {
+			if (n == int.MinValue)
 				return 1.0 / ( x * DoublePow(x, int.MaxValue) );
-			}
+
 			return 1.0 / DoublePow(x, -n);
 		}
 
@@ -271,11 +272,13 @@ public class Function {
 		double currentProduct = x;
 
 		while (n > 0) {
-			if (( n & 1 ) == 1) {
+
+			if (( n & 1 ) == 1)
 				result *= currentProduct;
-			}
+
 			currentProduct *= currentProduct;
 			n >>= 1;
+
 		}
 
 		return result;
@@ -426,7 +429,3 @@ public class Function {
 	#endregion
 
 }
-
-
-
-

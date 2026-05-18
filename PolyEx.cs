@@ -71,8 +71,9 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 		MonoSeries termSeries = new MonoSeries();
 
-		foreach (MonoEx mono in other.termSeries)
-			termSeries.Add(new MonoEx(mono));
+		if (other is not null)
+			foreach (ref readonly MonoEx mono in other.AsSpan())
+				termSeries.Add(new MonoEx(mono));
 
 		this.termSeries = termSeries;
 
@@ -351,8 +352,9 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	public PolyEx Add(PolyEx other) {
 
-		foreach (ref readonly var mono in other.AsSpan())
-			InsertMonomial(mono, false);
+		if (other is not null)
+			foreach (ref readonly var mono in other.AsSpan())
+				InsertMonomial(mono, false);
 
 		return this;
 
@@ -368,8 +370,9 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	public PolyEx Subtract(PolyEx other) {
 
-		foreach (ref readonly var mono in other.AsSpan())
-			InsertMonomial(mono, true);
+		if (other is not null)
+			foreach (ref readonly var mono in other.AsSpan())
+				InsertMonomial(mono, true);
 
 		return this;
 
@@ -388,18 +391,15 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	}
 
-	public PolyEx MultiplyWith(PolyEx other) {
+	public PolyEx MultiplyWith(PolyEx other) { //todo: optimize to have no aux data 
 
-		Queue<PolyEx> products = new Queue<PolyEx>();
+		MonoEx[] temp = termSeries.ToArray();
 
-		// go through each term in poly2 and multiply it with poly1
-		foreach (ref readonly MonoEx toMultiplyWith in other.AsSpan())
-			products.Enqueue(this * toMultiplyWith);
+		termSeries.Clear();
 
-		this.termSeries.Clear();
-
-		while (products.Count > 0)
-			this.Add(products.Dequeue());
+		foreach (MonoEx mono in temp)
+			foreach (ref readonly MonoEx toMultiplyWith in other.AsSpan())
+				InsertMonomial(mono * toMultiplyWith);
 
 		return this;
 
@@ -427,17 +427,34 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	}
 
-	// todo: exponent by squaring
 	public PolyEx Pow(int pow) {
 
-		if (pow <= 0)
-			return 1;
+		if (pow < 0)
+			throw new InvalidOperationException("Cannot take a polynomial to a negative power!");
 
-		for (int i = 1; i < pow; i++)
-			this.MultiplyWith(this);
+		if (pow == 0) {
 
-		return this;
+			termSeries.Clear();
+			termSeries.Add(1);
 
+			return this;
+
+		}
+
+		PolyEx result = 1;
+		PolyEx currentProduct = this;
+
+		while (pow > 0) {
+
+			if (( pow & 1 ) == 1)
+				result *= currentProduct;
+
+			currentProduct *= currentProduct;
+			pow >>= 1;
+
+		}
+
+		return result;
 	}
 
 	#endregion
@@ -450,7 +467,12 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	public static bool operator ==(PolyEx poly1, PolyEx poly2) {
 
-		if (poly2.Count != poly1.Count)
+		if (ReferenceEquals(poly1, poly2))
+			return true;
+
+		if (( poly1 is null && poly2 is not null ) ||
+			( poly1 is not null && poly2 is null ) ||
+			( poly2.Count != poly1.Count ))
 			return false;
 
 		if (ReferenceEquals(poly1.termSeries, poly2.termSeries))
@@ -461,25 +483,19 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 		// i was sorting in the old version, but moved to a good old n^2 brute force search
 		//		to prevent mutation in ==
 
-		foreach (ref readonly var monoToFind in poly1.AsSpan()) {
+		var poly2Span = poly2.AsSpan();
 
-			bool foundMonoInOther = false;
-
-			foreach (ref readonly var monoFound in poly2.AsSpan())
-				if (monoFound == monoToFind)
-					foundMonoInOther = true;
-
-			if (!foundMonoInOther)
+		foreach (ref readonly var monoToFind in poly1.AsSpan())
+			// apparently span.contains has low level optimizations with IEquatable which make it better than doing a normal loop
+			if (!poly2Span.Contains(monoToFind))
 				return false;
-
-		}
 
 		return true;
 
 	}
 	public static bool operator !=(PolyEx poly1, PolyEx poly2) => !( poly1 == poly2 );
 
-	public static bool operator ==(PolyEx poly, in MonoEx mono) => poly.termSeries.Count == 1 && poly.termSeries.Last() == mono;
+	public static bool operator ==(PolyEx poly, in MonoEx mono) => poly is not null && poly.termSeries.Count == 1 && poly.termSeries.Last() == mono;
 	public static bool operator !=(PolyEx poly, in MonoEx mono) => !( poly == mono );
 	public static bool operator ==(MonoEx mono, PolyEx poly) => poly == mono;
 	public static bool operator !=(MonoEx mono, PolyEx poly) => poly != mono;
@@ -487,7 +503,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	/// <returns>true if other is non-null and MonoEx, and monomials have the same variables, degrees, and coefficient</returns>
 	public override bool Equals(object? other) {
 
-		if (other == null || other.GetType() != this.GetType())
+		if (other is null || other.GetType() != this.GetType())
 			return false;
 
 		// the first 
