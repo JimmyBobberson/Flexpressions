@@ -1,13 +1,11 @@
-using System.Collections.Immutable;
-using System.Numerics;
 using System.Diagnostics;
 
 namespace Flexpressions;
 
 /// <summary>
-/// Flex objects represent independent variables used in Flexpressions objects (monomials, polynomials, functions); <br/>
-/// For example, Flex.x is just the variable "x." <br/>
-/// Flexpressions can only use the specific variables supported by the Flex type (currently can only use x, y, z). <br/>
+/// <b>Flex objects represent independent variables used in Flexpressions objects (monomials, polynomials, functions);</b><br/>
+/// <i>For example, Flex.x is just the variable "x."</i> <para/>
+/// Flexpressions can only use the specific variables supported by the Flex type (currently can only use x, y, z, t). <para/>
 /// Use Flex.All to read through every defined variable
 /// </summary>
 public readonly record struct Flex {
@@ -78,40 +76,49 @@ public readonly record struct Flex {
 	/// <summary>
 	/// Take a variable to a power and get the resulting monomial
 	/// </summary>
-	/// <param name="f"></param>
-	/// <param name="deg"></param>
-	/// <returns></returns>
+	/// <returns>Power of variable</returns>
 	public static MonoEx operator ^(Flex f, int deg) => new MonoEx(f, deg);
 
 	/// <summary>
 	/// Sum variables to get a polynomial (which will only have one term if the variables are the same)
 	/// </summary>
-	/// <param name="f1"></param>
-	/// <param name="f2"></param>
-	/// <returns></returns>
+	/// <returns>Sum of variables</returns>
 	public static PolyEx operator +(Flex f1, Flex f2) => new MonoEx(f1) + new MonoEx(f2);
 
+	/// <summary>
+	/// Sum a variable and a number to get a polynomial
+	/// </summary>
+	/// <returns>Sum of expressions</returns>
 	public static PolyEx operator +(Flex f1, double num) => new MonoEx(f1) + new MonoEx(num);
+	/// <summary>
+	/// Sum a variable and a number to get a polynomial
+	/// </summary>
+	/// <returns>Sum of expressions</returns>
 	public static PolyEx operator +(double num, Flex f1) => f1 + num;
 
+	/// <summary>
+	/// Subtract a number from a variable to get a polynomial
+	/// </summary>
+	/// <returns>Difference of expressions</returns>
 	public static PolyEx operator -(Flex f1, double num) => new MonoEx(f1) - new MonoEx(num);
+	/// <summary>
+	/// Subtract a variable from a number to get a polynomial
+	/// </summary>
+	/// <returns>Difference of expressions</returns>
 	public static PolyEx operator -(double num, Flex f1) => new MonoEx(num) - new MonoEx(f1);
 
+	/// <returns>The negative version of this variable as a monomial</returns>
 	public static MonoEx operator -(Flex f) => new MonoEx(-1, f, 1);
 
 	/// <summary>
 	/// Multiply a variable by a coefficient to get a monomial
 	/// </summary>
-	/// <param name="num"></param>
-	/// <param name="f"></param>
-	/// <returns></returns>
+	/// <returns>product of expressions</returns>
 	public static PolyEx operator *(double num, Flex f) => new MonoEx(num, f, 1);
 	/// <summary>
 	/// Multiply a variable by a coefficient to get a monomial
 	/// </summary>
-	/// <param name="num"></param>
-	/// <param name="f"></param>
-	/// <returns></returns>
+	/// <returns>product of expressions</returns>
 	public static PolyEx operator *(Flex f, double num) => num * f;
 
 	#endregion

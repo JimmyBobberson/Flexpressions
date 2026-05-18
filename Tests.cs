@@ -1,4 +1,3 @@
-using System;
 using System.Diagnostics;
 
 namespace Flexpressions.Tests;
@@ -8,6 +7,9 @@ namespace Flexpressions.Tests;
 /// </summary>
 public static class RuntimeBattery {
 
+	/// <summary>
+	/// run runtime tests
+	/// </summary>
 	public static void Run() {
 		Console.WriteLine("=== Flexpressions Performance Battery ===");
 		Console.WriteLine("Warming up the JIT compiler...");
@@ -63,6 +65,9 @@ public static class RuntimeBattery {
 		}, iterations);
 	}
 
+	/// <summary>
+	/// run benchmark
+	/// </summary>
 	private static void RunBenchmark(string name, Action test, int iterations) {
 		GC.Collect();
 		GC.WaitForPendingFinalizers();
@@ -91,8 +96,14 @@ public static class RuntimeBattery {
 	}
 }
 
+/// <summary>
+/// AI-generated memory test
+/// </summary>
 public static class MemoryBattery {
 
+	/// <summary>
+	/// run memory tests
+	/// </summary>
 	public static void Run() {
 		Console.WriteLine("\n=== Flexpressions Memory Battery ===");
 		Console.WriteLine("Warming up memory profiler...");
@@ -137,6 +148,9 @@ public static class MemoryBattery {
 		}, iterations);
 	}
 
+	/// <summary>
+	/// run benchmark
+	/// </summary>
 	private static void RunBenchmark(string name, Action test, int iterations) {
 		// Run once to ensure any static constructors or JIT caching is handled
 		test();

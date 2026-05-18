@@ -1,7 +1,4 @@
-﻿using System;
-using System.Diagnostics;
-
-namespace Flexpressions;
+﻿namespace Flexpressions;
 
 class Program {
 

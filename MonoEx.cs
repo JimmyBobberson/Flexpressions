@@ -1,20 +1,10 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Numerics;
-using System.Text;
-using System.Linq;
-using System.Net;
-using System.Diagnostics.CodeAnalysis;
-using System.Collections.Immutable;
-
-namespace Flexpressions;
+﻿namespace Flexpressions;
 
 /// <summary>
 /// <b>A MonoEx (monomial expression) is the product of a coefficient and a set of independent variables (each with a degree).</b> <para/>
-/// MonoEx objects are the fundamental building blocks of Flexpressions.<br/>
-/// All powers are doubles (rounded) and all powers are integers <br/>
-/// MonoEx objects are immutable and all operations return a new object.<br/>
+/// MonoEx objects are the fundamental building blocks of Flexpressions.<para/>
+/// All powers are doubles (rounded) and all powers are integers <para/>
+/// MonoEx objects are immutable and all operations return a new object.<para/>
 /// </summary>
 
 // todo: IParsable
@@ -114,7 +104,6 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 			return ret;
 
 		}
-
 
 		#endregion
 
@@ -310,6 +299,11 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	///</summary>
 	public readonly int DegreeOfVariable(Flex idpVar) => idpDegrees[idpVar.Id];
 
+	/// <summary>
+	/// check if the monomial contains a given independent variable
+	/// </summary>
+	/// <param name="idpVar">variable to check for</param>
+	/// <returns>true if the variable is in the monomial (has a nonzero degree)</returns>
 	public readonly bool HasVariable(Flex idpVar) => DegreeOfVariable(idpVar) != 0;
 
 	/// <summary>
@@ -339,21 +333,21 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// <summary>
 	/// Add monomials, which creates a polynomial of either 1 or 2 terms depending on if the monomials were like terms
 	/// </summary>
-	/// <returns>Sum of expressions as polynomial</returns>
+	/// <returns>Sum of expressions as a new polynomial</returns>
 	public static PolyEx operator +(in MonoEx mono1, in MonoEx mono2) => PolyEx.CombineMonomials(mono1, mono2, false);
 
 	// subtract monomials to make a polynomial
 	/// <summary>
 	/// Subtract monomials, which creates a polynomial of either 1 or 2 terms depending on if the monomials were like terms
 	/// </summary>
-	/// <returns>Difference of expressions as polynomial</returns>
+	/// <returns>Difference of expressions as a new polynomial</returns>
 	public static PolyEx operator -(in MonoEx mono1, in MonoEx mono2) => PolyEx.CombineMonomials(mono1, mono2, true);
 
 	// multiply monomials to get a monomial in return 
 	/// <summary>
 	/// Multiply a monomial with another, combining coefficient and variables
 	/// </summary>
-	/// <returns>Product of expressions as monomial</returns>
+	/// <returns>Product of expressions as a new monomial</returns>
 	public static MonoEx operator *(in MonoEx mono1, in MonoEx mono2) {
 
 		double coefficientProduct = ForcePrecision(mono1.coefficient * mono2.coefficient);
@@ -374,24 +368,24 @@ public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 	/// <summary>
 	/// Multiply a monomial with a scalar
 	/// </summary>
-	/// <returns>Product of expressions as monomial</returns>
+	/// <returns>Product of expressions as a new monomial</returns>
 	public static MonoEx operator *(in MonoEx mono1, in double scalar) => new MonoEx(ForcePrecision(mono1.Coefficient * scalar), mono1.idpDegrees);
 	/// <summary>
 	/// Multiply a monomial with a scalar
 	/// </summary>
-	/// <returns>Product of expressions as monomial</returns>
+	/// <returns>Product of expressions as a new monomial</returns>
 	public static MonoEx operator *(double scalar, in MonoEx mono1) => new MonoEx(ForcePrecision(mono1.Coefficient * scalar), mono1.idpDegrees);
 	/// <summary>
 	/// Create the negative version of a monomial
 	/// </summary>
-	/// <returns>This monomial with the opposite sign coefficient</returns>
+	/// <returns>This monomial with the opposite sign coefficient as a new monomial</returns>
 	public static MonoEx operator -(in MonoEx mono) => mono.Flipped();
 
 	// divide monomial by a scalar to get a monomial in return with the same independent variables
 	/// <summary>
 	/// Divide monomial by a scalar
 	/// </summary>
-	/// <returns>Quotient of expressions as monomial</returns>
+	/// <returns>Quotient of expressions as a new monomial</returns>
 	public static MonoEx operator /(in MonoEx mono1, double scalar) => new MonoEx(ForcePrecision(mono1.Coefficient / scalar), mono1.idpDegrees);
 
 	public static MonoEx operator ^(in MonoEx mono, int pow) {

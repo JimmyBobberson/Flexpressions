@@ -1,21 +1,16 @@
-﻿using System;
-using System.Diagnostics;
-using System.Numerics;
-using System.Runtime.InteropServices;
-using System.Text;
+﻿using System.Runtime.InteropServices;
 
 namespace Flexpressions;
 
 /// <summary>
 /// <b>A PolyEx (polynomial expression) is a series of MonoEx objects chained together by operators (+/-).</b> <para/>
 /// 
-/// Any group of monomial expressions can be combined into a polynomial expression,
-/// and those can be combined into bigger polynomial expressions. 
-/// The monomials are ordered by degree.<br/>
+/// Polynomials are created by combining expressions.<para/>
 /// 
-/// Polynomial expressions can be used in functions.<br/>
+/// Polynomials can be constructed immutably with Whiteboard operators (+, -, *, ^),
+/// <br/> or mutably with the functions Add, Subtract, MultiplyWith, DivideBy, and Pow. <para/>
 /// 
-/// Supports indexed accessing for terms. <br/>
+/// Polynomial expressions can be used in Functions to be evaluated.
 /// 
 /// </summary>
 /// 
@@ -194,17 +189,17 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	/// <summary>
 	/// Convert a monomial into a single-term polynomial
 	/// </summary>
-	/// <param name="mono"></param>
+	/// <param name="mono">Term to convert to polynomial</param>
 	public static implicit operator PolyEx(MonoEx mono) => new PolyEx(mono);
 	/// <summary>
 	/// Convert a coefficient into a monomial and then into into a single-term polynomial
 	/// </summary>
-	/// <param name="num"></param>
+	/// <param name="num">Term to convert to polynomial</param>
 	public static implicit operator PolyEx(double num) => new PolyEx(new MonoEx(coefficient: num));
 	/// <summary>
 	/// Convert a variable into a monomial and then into into a single-term polynomial
 	/// </summary>
-	/// <param name="idp"></param>
+	/// <param name="idp">Term to convert to polynomial</param>
 	public static implicit operator PolyEx(Flex idp) => new PolyEx(new MonoEx(independent: idp, degree: 1));
 
 	#endregion
@@ -214,7 +209,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	/// <summary>
 	/// Add a monomial to a polynomial
 	/// </summary>
-	/// <returns>Sum of expressions as polynomial</returns>
+	/// <returns>Sum of expressions as a new polynomial</returns>
 	public static PolyEx operator +(PolyEx poly, in MonoEx mono) {
 
 		PolyEx temp = new PolyEx(poly);
@@ -227,7 +222,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	/// <summary>
 	/// Adds all monomials from poly2 to poly1
 	/// </summary>
-	/// <returns>Sum of expressions as polynomial</returns>
+	/// <returns>Sum of expressions as a new polynomial</returns>
 	public static PolyEx operator +(PolyEx poly1, PolyEx poly2) {
 
 		PolyEx temp = new PolyEx(poly1);
@@ -239,7 +234,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	/// <summary>
 	/// Subtracts a monomial from a polynomial
 	/// </summary>
-	/// <returns>Difference of expressions as polynomial</returns>
+	/// <returns>Difference of expressions as a new polynomial</returns>
 	public static PolyEx operator -(PolyEx poly, in MonoEx mono) {
 
 		PolyEx temp = new PolyEx(poly);
@@ -247,6 +242,10 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 		return temp.Subtract(mono);
 
 	}
+	/// <summary>
+	/// Subtracts a polynomial from a monomial
+	/// </summary>
+	/// <returns>Difference of expressions as a new polynomial</returns>
 	public static PolyEx operator -(in MonoEx mono, PolyEx poly) {
 
 		// mono - poly == -poly + mono
@@ -275,7 +274,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	/// <summary>
 	/// Multiply all terms in a polynomial by a monomial
 	/// </summary>
-	/// <returns>Product of expressions as a polynomial</returns>
+	/// <returns>Product of expressions as a new polynomial</returns>
 	public static PolyEx operator *(PolyEx poly, in MonoEx mono) {
 
 		PolyEx temp = new PolyEx(poly);
@@ -286,14 +285,14 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	/// <summary>
 	/// Multiply all terms in a polynomial by a monomial
 	/// </summary>
-	/// <returns>Product of expressions as a polynomial</returns>
+	/// <returns>Product of expressions as a new polynomial</returns>
 	public static PolyEx operator *(in MonoEx mono, PolyEx poly) => poly * mono;
 
 	// TODO: OPTIMIZE A LOT (Delegate to mutable behavior)
 	/// <summary>
 	/// Multiply two polynomials together
 	/// </summary>
-	/// <returns>Product of expressions as a polynomial</returns>
+	/// <returns>Product of expressions as a new polynomial</returns>
 	public static PolyEx operator *(PolyEx poly1, PolyEx poly2) {
 
 		PolyEx temp = new PolyEx(poly1);
@@ -305,7 +304,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	/// <summary>
 	/// Create the negative version of a polynomial
 	/// </summary>
-	/// <returns>This polynomial with flipped-sign coefficients</returns>
+	/// <returns>This polynomial with flipped-sign coefficients as a new polynomial</returns>
 	public static PolyEx operator -(PolyEx poly) {
 
 		PolyEx temp = new PolyEx(poly);
@@ -318,6 +317,11 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	#region Division and Pow
 
+	/// <summary>
+	/// Divide a polynomial by a constant 
+	/// </summary>
+	/// <param name="num">Constant expression</param>
+	/// <returns>Quotient of operation as new polynomial</returns>
 	public static PolyEx operator /(PolyEx poly, double num) {
 
 		PolyEx temp = new PolyEx(poly);
@@ -326,6 +330,11 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	}
 
+	/// <summary>
+	/// Take polynomial to a power
+	/// </summary>
+	/// <param name="pow">exponent</param>
+	/// <returns>Power of polynomial as new polynomial</returns>
 	public static PolyEx operator ^(PolyEx poly, int pow) {
 
 		PolyEx temp = new PolyEx(poly);
@@ -342,6 +351,11 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	#region Addition and Subtraction
 
+	/// <summary>
+	/// Add a monomial to this polyonomial (mutates this)
+	/// </summary>
+	/// <param name="mono">Monomial to add to this</param>
+	/// <returns>this</returns>
 	public PolyEx Add(in MonoEx mono) {
 
 		InsertMonomial(mono, false);
@@ -350,6 +364,11 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	}
 
+	/// <summary>
+	/// Add a polynomial to this polyonomial (mutates this)
+	/// </summary>
+	/// <param name="other">Polynomial to add to this</param>
+	/// <returns>this</returns>
 	public PolyEx Add(PolyEx other) {
 
 		if (other is not null)
@@ -360,6 +379,11 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	}
 
+	/// <summary>
+	/// Subtract a monomial from this polynomial (mutates this)
+	/// </summary>
+	/// <param name="mono">Monomial to subtract from this</param>
+	/// <returns>this</returns>
 	public PolyEx Subtract(in MonoEx mono) {
 
 		InsertMonomial(mono, true);
@@ -368,6 +392,11 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	}
 
+	/// <summary>
+	/// Subtract a polynomial from this polynomial (mutates this)
+	/// </summary>
+	/// <param name="other">Polynomial to subtract from this</param>
+	/// <returns>this</returns>
 	public PolyEx Subtract(PolyEx other) {
 
 		if (other is not null)
@@ -382,6 +411,11 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	#region Multiplication
 
+	/// <summary>
+	/// Multiply this polynomial with a monomial (mutates this)
+	/// </summary>
+	/// <param name="mono">Monomial to multiply with</param>
+	/// <returns>this</returns>
 	public PolyEx MultiplyWith(in MonoEx mono) {
 
 		for (int i = 0; i < termSeries.Count; i++)
@@ -391,6 +425,11 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	}
 
+	/// <summary>
+	/// Multiply this polynomial with another polynomial (mutates this)
+	/// </summary>
+	/// <param name="other">Polynomial to multiply with</param>
+	/// <returns>this</returns>
 	public PolyEx MultiplyWith(PolyEx other) { //todo: optimize to have no aux data 
 
 		MonoEx[] temp = termSeries.ToArray();
@@ -405,6 +444,10 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	}
 
+	/// <summary>
+	/// Turn this polynomial into the negative version of itself (mutates this)
+	/// </summary>
+	/// <returns>this</returns>
 	public PolyEx Negative() {
 
 		for (int i = 0; i < termSeries.Count; i++)
@@ -418,6 +461,11 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	#region Division and Pow
 
+	/// <summary>
+	/// Divide this polynomial by a constant number (mutates this)
+	/// </summary>
+	/// <param name="num">Constant to divide by</param>
+	/// <returns>this</returns>
 	public PolyEx DivideBy(double num) {
 
 		for (int i = 0; i < termSeries.Count; i++)
@@ -427,6 +475,11 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	}
 
+	/// <summary>
+	/// Take this polynomial to a power (mutates this)
+	/// </summary>
+	/// <param name="pow">Exponent to take polynomial to</param>
+	/// <returns>this</returns>
 	public PolyEx Pow(int pow) {
 
 		if (pow < 0)
@@ -465,6 +518,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	#region Equality
 
+	/// <returns>true if both polynomials are the same object or have the same terms</returns>
 	public static bool operator ==(PolyEx poly1, PolyEx poly2) {
 
 		if (ReferenceEquals(poly1, poly2))
@@ -475,7 +529,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 			( poly2.Count != poly1.Count ))
 			return false;
 
-		if (ReferenceEquals(poly1.termSeries, poly2.termSeries))
+		if (ReferenceEquals(poly1.termSeries, poly2.termSeries)) // should never be true tbh
 			return true;
 
 		// we have guaranteed that these polynomials have the same size
@@ -493,14 +547,20 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 		return true;
 
 	}
+	/// <returns>false if both polynomials are the same object or have the same terms</returns>
 	public static bool operator !=(PolyEx poly1, PolyEx poly2) => !( poly1 == poly2 );
 
-	public static bool operator ==(PolyEx poly, in MonoEx mono) => poly is not null && poly.termSeries.Count == 1 && poly.termSeries.Last() == mono;
+	/// <returns>true if the polynomial has one term, and that term is equal to mono</returns>
+	public static bool operator ==(PolyEx poly, in MonoEx mono) => poly is not null && poly.termSeries.Count == 1 && poly.termSeries[0] == mono;
+	/// <returns>false if the polynomial has one term, and that term is equal to mono</returns>
 	public static bool operator !=(PolyEx poly, in MonoEx mono) => !( poly == mono );
+
+	/// <returns>true if the polynomial has one term, and that term is equal to mono</returns>
 	public static bool operator ==(MonoEx mono, PolyEx poly) => poly == mono;
+	/// <returns>false if the polynomial has one term, and that term is equal to mono</returns>
 	public static bool operator !=(MonoEx mono, PolyEx poly) => poly != mono;
 
-	/// <returns>true if other is non-null and MonoEx, and monomials have the same variables, degrees, and coefficient</returns>
+	/// <returns>true if other is non-null, is PolyEx, and the PolyEx has all the same terms as this</returns>
 	public override bool Equals(object? other) {
 
 		if (other is null || other.GetType() != this.GetType())
@@ -515,7 +575,8 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	}
 
 	// needed for IEquatable
-	public bool Equals(PolyEx other) => this.Equals((object)other);
+	/// <returns>true if other is non-null, is PolyEx, and the PolyEx has all the same terms as this</returns>
+	public bool Equals(PolyEx? other) => this.Equals((object?)other);
 
 	/// <inheritdoc cref="GetHashCode"/>
 	/// <summary>
@@ -537,7 +598,7 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 	#region Accessors
 
 	/// <summary>
-	/// total number of monmials that make up this polynomial expression
+	/// total number of monomials that make up this polynomial expression
 	/// </summary>
 	public int Count => termSeries.Count;
 
@@ -554,25 +615,6 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 	// allows monos to be read directly without copying
 	internal ReadOnlySpan<MonoEx> AsSpan() => CollectionsMarshal.AsSpan(termSeries);
-
-	/// <summary>
-	/// access a monomial of the polynomial expression
-	/// elements are ordered from highest to lowest degree
-	/// </summary>
-	/// <param name="idx"></param>
-	/// <returns></returns>
-	public MonoEx this[int idx] {
-
-		get {
-
-			if (idx >= 0 && idx < termSeries.Count)
-				return termSeries[idx];
-
-			throw new IndexOutOfRangeException("Attempted to access out-of-range monomial within polynomial");
-
-		}
-
-	}
 
 	#region IEnumerable
 

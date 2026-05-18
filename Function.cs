@@ -1,15 +1,10 @@
-﻿using System.Collections.Immutable;
-using System.Linq.Expressions;
-using System.Numerics;
-using System.Text;
-
-namespace Flexpressions;
+﻿namespace Flexpressions;
 
 /// <summary>
-/// Functions allow the evaluation of polynomials at specific points. <br/>
-/// Use [] for evaluation, and pass inputs in the following order: <i>x, y, z, t.</i> Omit variables not in your function. <br/>
+/// <b>Functions enable the evaluation of polynomials at specific points as well as special operations like calculus.</b>  <para/>
+/// Use [] for evaluation, and pass inputs in the following order: <i>x, y, z, t</i> (same as Flex.All). Omit variables not in your function. <para/>
 /// If the function's polynomial contains no variables, it will
-/// fall back to the last variables the function recognized, or the default variable "x". <br/>
+/// fall back to the last variables the function recognized, or the default variable "x".  <para/>
 /// Functions have a string name (e.g., <i>f</i>) for when they are printed.
 /// </summary>
 public class Function {
@@ -19,14 +14,21 @@ public class Function {
 	private const string DEFAULT_NAME = "f";
 	private static readonly Flex DEFAULT_VAR = Flex.x;
 
+	/// <summary> The function f(x) = 0 </summary>
 	public static readonly Function Zero = new Function(0, DEFAULT_NAME);
+	/// <summary> The function f(x) = num </summary>
 	public static Function ConstantFunctionFor(double num) => new Function(num, DEFAULT_NAME);
 
+	/// <summary> The function f(x) = x </summary>
 	public static readonly Function Linear = new Function(DEFAULT_VAR, DEFAULT_NAME);
+	/// <summary> The function f(x) = x^2 </summary>
 	public static readonly Function Quadratic = new Function(DEFAULT_VAR ^ 2, DEFAULT_NAME);
+	/// <summary> The function f(x) = x^3 </summary>
 	public static readonly Function Cubic = new Function(DEFAULT_VAR ^ 3, DEFAULT_NAME);
 
+	/// <summary> The function f(x,y) = x + y </summary>
 	public static readonly Function Linear2D = new Function(Flex.x + Flex.y, DEFAULT_NAME);
+	/// <summary> The function f(x,y,z) = x + y + z </summary>
 	public static readonly Function Linear3D = new Function(Flex.x + Flex.y + Flex.z, DEFAULT_NAME);
 
 	#endregion
@@ -55,6 +57,8 @@ public class Function {
 
 		vars = new SortedSet<int>();
 
+		// poly is actually set in within the function. the explicit assignment is just to remove a compiler warning
+		this.poly = poly;
 		UpdatePoly(poly);
 
 		if (vars.Count == 0)
@@ -168,6 +172,11 @@ public class Function {
 
 	#region Accessors
 
+	/// <summary>
+	/// Check if this function is dependent on a certain variable
+	/// </summary>
+	/// <param name="variable">Variable to check for</param>
+	/// <returns>True if function's expression contains the variable</returns>
 	public bool HasVariable(Flex variable) => vars.Contains(variable.Id);
 
 	/// <summary>
@@ -254,7 +263,7 @@ public class Function {
 	}
 
 	// ai generated
-	public static double DoublePow(double x, int n) {
+	private static double DoublePow(double x, int n) {
 		// Handle negative exponents without stack overflow
 		// note from not an ai: n will never be less than 0 
 		if (n < 0) {
@@ -288,24 +297,22 @@ public class Function {
 
 	#region Operators 
 
-	/// <summary>
-	/// Create a function using the given polynomial
-	/// </summary>
+	/// <summary> Create a function using the given polynomial </summary>
 	/// <param name="poly">Polynomial to turn into function</param>
 	public static implicit operator Function(PolyEx poly) => new Function(poly);
 
-	/// <summary>
-	/// Create a function using the given monomial
-	/// </summary>
+
+	/// <summary> Create a function using the given monomial</summary>
 	/// <param name="mono">Monomial to turn into function</param>
 	public static implicit operator Function(MonoEx mono) => new Function(mono);
 
+	/// <summary> Create a function using the given double constant</summary>
+	/// <param name="num">Constant monomial to turn into function</param>
 	public static implicit operator Function(double num) => new Function(num);
 
+	/// <summary> Create a function using the given independent variable</summary>
+	/// <param name="idp">Variable to turn into function</param>
 	public static implicit operator Function(Flex idp) => new Function(idp);
-
-	public static Function operator +(Function func1, Function func2) => new Function(func1.poly + func2.poly, "(" + func1.Name + " + " + func2.Name + ")");
-	public static Function operator *(Function func1, Function func2) => new Function(func1.poly * func2.poly, "(" + func1.Name + func2.Name + ")");
 
 	#endregion
 
@@ -348,7 +355,7 @@ public class Function {
 	/// </summary>
 	/// <param name="order">degree of derivative (first, second, etc)</param>
 	/// <param name="changeInVariable">variable to differentiate with respect towards</param>
-	/// <returns>The order-th derivative of the function with respect to the change in variable, or this if order <= 0</returns>
+	/// <returns>The order-th derivative of the function with respect to the change in variable, or this if order is 0 or less</returns>
 	public Function Derivative(int order, Flex changeInVariable) {
 
 		if (order <= 0)
