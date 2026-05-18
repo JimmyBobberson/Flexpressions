@@ -14,6 +14,13 @@ A symbolic algebra utility for C# that introduces flexible and adorable polynomi
 
 <img width="900" height="300" alt="FlexpressionsDemoA" src="https://github.com/user-attachments/assets/90eeda23-8aa0-4f53-920e-9ae4b0aa7565" />
 
+## Installation
+
+https://www.nuget.org/packages/studio1125.Flexpressions
+```
+dotnet add package studio1125.Flexpressions 
+```
+
 ## About
 
 Flexpressions is a polynomial math eDSL/tool for C#. 
