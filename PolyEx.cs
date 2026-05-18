@@ -458,15 +458,21 @@ public class PolyEx : IReadOnlyCollection<MonoEx>, IEquatable<PolyEx> {
 
 		// we have guaranteed that these polynomials have the same size
 
-		poly1.Sort();
-		poly2.Sort();
+		// i was sorting in the old version, but moved to a good old n^2 brute force search
+		//		to prevent mutation in ==
 
-		var monoSpan1 = poly1.AsSpan();
-		var monoSpan2 = poly2.AsSpan();
+		foreach (ref readonly var monoToFind in poly1.AsSpan()) {
 
-		for (int i = 0; i < monoSpan1.Length; i++)
-			if (monoSpan1[i] != monoSpan2[i])
+			bool foundMonoInOther = false;
+
+			foreach (ref readonly var monoFound in poly2.AsSpan())
+				if (monoFound == monoToFind)
+					foundMonoInOther = true;
+
+			if (!foundMonoInOther)
 				return false;
+
+		}
 
 		return true;
 
