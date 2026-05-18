@@ -6,9 +6,6 @@
 /// All powers are doubles (rounded) and all powers are integers <para/>
 /// MonoEx objects are immutable and all operations return a new object.<para/>
 /// </summary>
-
-// todo: IParsable
-// todo: INumber
 public readonly struct MonoEx : IComparable, IEquatable<MonoEx> {
 
 	#region Static Config and Helper Stuff
