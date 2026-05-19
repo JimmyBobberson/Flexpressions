@@ -27,7 +27,7 @@ Flexpressions is a polynomial math eDSL/tool for C#.
 
 **Whiteboard:** The utility focuses on syntactical sugar which seeks to resemble marker-on-whiteboard syntax as closely as the C# compiler allows. This specific language is referred to as *Whiteboard.* Write math functions with familar notation while also leveraging the added power that comes with computer programming languages. 
 
-**Flexibility:** Flexpressions is flexible in its syntax but also in its overall usage. By default, Flexpressions can be used *immutably with Whiteboard,* or with more programming-standard *mutable behavior for performance-intensive scenarios* where there is a weaker desire for backend aesthetics and accessibility. Additionally, the legacy version of Flexpressions can be used when C# generic math is desired, though with worse performance and syntax versus the standard, nongeneric Flexpressions.
+**Flexibility:** Flexpressions is flexible in its syntax but also in its overall usage. By default, Flexpressions can be used *immutably with Whiteboard,* or with more programming-standard *mutable behavior for performance-intensive scenarios* where there is a weaker desire for backend aesthetics and accessibility. 
 
 **Abstraction:** Flexpression has its own stack of moving parts, but Whiteboard usage patterns completely hide this, allowing the devloper to *focus entirely on the polynomials without regard for boilerplate.* 
 
@@ -49,23 +49,11 @@ Flexpressions allows for polynomial manipulation in C# that anyone who knows alg
 
 Additionally, Flexpressions is perfect if your math never goes far beyond what polynomial functions can achieve. 
 
-## Versions
-
-Flexpressions has 2 main versions: Standard (nongeneric) and Legacy (generic).
-
-The Standard version is the optimal choice for most use cases. It is the better choice out of the two for performance, ease of use, and robustness.
-
-The Legacy version has one edge over the nongeneric version: it supports C# generic math. If you really want C# generic math, you can use legacy. 
-
-Legacy will ideally recieve continual maintenance to establish functional parity between the versions, but some features and optimizations are impossible in the Legacy system, which is why Standard is nongeneric, on top of the fact that the boilerplate for generics weakens Whiteboard.
-
 ## Roadmap
 
 (in no specific order)
 
 - Further performance improvements.
-
-- Basic calculus for functions.
 
 - Advanced functions, such as rational, exponential, floating-point power, etc., with the abiltiy to compose functions together, ideally all with Whiteboard support. 
 
